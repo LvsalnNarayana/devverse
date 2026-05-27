@@ -1,0 +1,79 @@
+{
+  "id": "stack",
+  "header": {
+    "backTo": "/dsa",
+    "overline": "Data Structures · Easy",
+    "title": "Stack",
+    "description": "A stack is a linear data structure that enforces LIFO — Last In, First Out. Every core operation (push, pop, peek) runs in O(1), making stacks the go-to tool for parenthesis matching, function call tracking, undo history, and monotonic-stack patterns."
+  },
+  "howItWorks": {
+    "title": "How a stack works",
+    "items": [
+      "Elements are added and removed from one end only — the top. This constraint is what gives a stack its power and predictability.",
+      "Push places a new element on top in O(1) — no shifting, just a pointer increment.",
+      "Pop removes and returns the top element in O(1) — again, a single pointer move.",
+      "Peek reads the top without removing it — useful when you need to inspect before deciding whether to pop.",
+      "Searching for an arbitrary value requires scanning from the top downward — O(n) — because stacks offer no random access.",
+      "The call stack in every programming language is literally a stack: each function call pushes a frame; returning pops it."
+    ]
+  },
+  "visualization": {
+    "id": "stack",
+    "kind": "stack",
+    "defaults": {
+      "initialValues": [
+        10,
+        20,
+        30
+      ]
+    }
+  },
+  "code": {
+    "title": "Stack operations & patterns",
+    "files": [
+      {
+        "filename": "stack.js",
+        "language": "javascript",
+        "code": "// ─── Stack in JavaScript ─────────────────────────────────────────────────────\n//\n// JavaScript has no built-in Stack class — arrays serve as stacks perfectly.\n// push/pop operate on the end (O(1) amortized), giving true LIFO behaviour.\n// Never use shift/unshift for a stack: those are O(n) (front of array).\n\nconst stack = [];\n\n// ── O(1) — Push (add to top) ─────────────────────────────────────────────\nstack.push(10); // [10]\nstack.push(20); // [10, 20]\nstack.push(30); // [10, 20, 30]\n\n// ── O(1) — Peek (read top without removing) ──────────────────────────────\nconst top = stack.at(-1);        // 30  (modern, preferred)\nconst top2 = stack[stack.length - 1]; // 30  (compatible with older envs)\n\n// ── O(1) amortized — Pop (remove top) ────────────────────────────────────\nconst removed = stack.pop();     // 30, stack = [10, 20]\n\n// ── O(1) — isEmpty ───────────────────────────────────────────────────────\nconst empty = stack.length === 0; // false\n\n// ── O(n) — Search (scan from top) ────────────────────────────────────────\n// Stacks do not support random access — you must scan from the top.\nconst idx = stack.lastIndexOf(20); // 1 (index, not position from top)\n\n// ─────────────────────────────────────────────────────────────────────────\n// Pattern 1 — Balanced parentheses                          O(n) time/space\n// ─────────────────────────────────────────────────────────────────────────\nfunction isBalanced(s) {\n  const stack = [];\n  const match = { ')': '(', ']': '[', '}': '{' };\n  for (const ch of s) {\n    if ('([{'.includes(ch)) stack.push(ch);\n    else if ('])}'.includes(ch)) {\n      if (stack.pop() !== match[ch]) return false;\n    }\n  }\n  return stack.length === 0;\n}\n// isBalanced(\"({[]})\") → true\n// isBalanced(\"({[})\") → false\n\n// ─────────────────────────────────────────────────────────────────────────\n// Pattern 2 — Monotonic stack (next greater element)        O(n) time/space\n// ─────────────────────────────────────────────────────────────────────────\n// For each element, find the next element to its right that is greater.\nfunction nextGreater(nums) {\n  const result = new Array(nums.length).fill(-1);\n  const stack = []; // stores indices\n  for (let i = 0; i < nums.length; i++) {\n    while (stack.length && nums[stack.at(-1)] < nums[i]) {\n      result[stack.pop()] = nums[i];\n    }\n    stack.push(i);\n  }\n  return result;\n}\n// nextGreater([2, 1, 2, 4, 3]) → [4, 2, 4, -1, -1]\n\n// ─────────────────────────────────────────────────────────────────────────\n// Pattern 3 — Evaluate RPN (Reverse Polish Notation)        O(n) time/space\n// ─────────────────────────────────────────────────────────────────────────\nfunction evalRPN(tokens) {\n  const stack = [];\n  const ops = { '+': (a, b) => a + b, '-': (a, b) => a - b,\n                '*': (a, b) => a * b, '/': (a, b) => Math.trunc(a / b) };\n  for (const t of tokens) {\n    if (ops[t]) {\n      const b = stack.pop(), a = stack.pop();\n      stack.push(ops[t](a, b));\n    } else {\n      stack.push(Number(t));\n    }\n  }\n  return stack[0];\n}\n// evalRPN([\"2\",\"1\",\"+\",\"3\",\"*\"]) → 9  ((2+1)*3)\n"
+      },
+      {
+        "filename": "stack.py",
+        "language": "python",
+        "code": "# ─── Stack in Python ─────────────────────────────────────────────────────────\n#\n# Python's list doubles as a stack — append/pop at the end are O(1) amortized.\n# collections.deque is faster for very large stacks (no occasional O(n) resize).\n\nfrom collections import deque\n\n# ── Using list (most common) ──────────────────────────────────────────────\nstack = []\nstack.append(10)  # push  → [10]\nstack.append(20)  # push  → [10, 20]\nstack.append(30)  # push  → [10, 20, 30]\n\ntop     = stack[-1]   # peek  → 30  (no removal)\nremoved = stack.pop() # pop   → 30, stack = [10, 20]\nempty   = len(stack) == 0  # False\n\n# ── Using deque (preferred for performance-critical code) ─────────────────\ndq = deque()\ndq.append(10)       # push\ndq.append(20)\ntop     = dq[-1]    # peek  → 20\nremoved = dq.pop()  # pop   → 20\n\n# ─────────────────────────────────────────────────────────────────────────\n# Pattern 1 — Balanced parentheses                          O(n) time/space\n# ─────────────────────────────────────────────────────────────────────────\ndef is_balanced(s: str) -> bool:\n    stack = []\n    match = {')': '(', ']': '[', '}': '{'}\n    for ch in s:\n        if ch in '([{':\n            stack.append(ch)\n        elif ch in ')]}':\n            if not stack or stack.pop() != match[ch]:\n                return False\n    return not stack\n\n# is_balanced(\"({[]})\") → True\n# is_balanced(\"({[})\") → False\n\n# ─────────────────────────────────────────────────────────────────────────\n# Pattern 2 — Monotonic stack (next greater element)        O(n) time/space\n# ─────────────────────────────────────────────────────────────────────────\ndef next_greater(nums: list[int]) -> list[int]:\n    result = [-1] * len(nums)\n    stack = []  # stores indices\n    for i, val in enumerate(nums):\n        while stack and nums[stack[-1]] < val:\n            result[stack.pop()] = val\n        stack.append(i)\n    return result\n\n# next_greater([2, 1, 2, 4, 3]) → [4, 2, 4, -1, -1]\n\n# ─────────────────────────────────────────────────────────────────────────\n# Pattern 3 — Min stack (getMin in O(1))                    O(n) space\n# ─────────────────────────────────────────────────────────────────────────\nclass MinStack:\n    \"\"\"Track the current minimum alongside each pushed value.\"\"\"\n    def __init__(self):\n        self._stack = []        # (value, current_min) pairs\n\n    def push(self, val: int) -> None:\n        min_so_far = min(val, self._stack[-1][1]) if self._stack else val\n        self._stack.append((val, min_so_far))\n\n    def pop(self) -> int:\n        return self._stack.pop()[0]\n\n    def peek(self) -> int:\n        return self._stack[-1][0]\n\n    def get_min(self) -> int:\n        return self._stack[-1][1]   # O(1) — stored at each level\n"
+      },
+      {
+        "filename": "StackOps.java",
+        "language": "java",
+        "code": "// ─── Stack in Java ───────────────────────────────────────────────────────────\n//\n// Java offers two main options:\n//   Deque<T> (ArrayDeque)  — preferred; faster than legacy Stack<T>.\n//   Stack<T>               — extends Vector (synchronized, legacy); avoid for\n//                            new code unless you specifically need thread safety.\n\nimport java.util.ArrayDeque;\nimport java.util.Deque;\nimport java.util.Stack;\n\npublic class StackOps {\n\n    public static void main(String[] args) {\n\n        // ── Deque as stack (preferred) ────────────────────────────────────\n        Deque<Integer> stack = new ArrayDeque<>();\n\n        // O(1) — Push\n        stack.push(10); // [10]      (push = addFirst on Deque)\n        stack.push(20); // [20, 10]\n        stack.push(30); // [30, 20, 10]\n\n        // O(1) — Peek (read top without removing)\n        int top = stack.peek();    // 30  (returns null if empty)\n        int top2 = stack.peekFirst(); // same as peek()\n\n        // O(1) — Pop (remove top)\n        int removed = stack.pop(); // 30, stack = [20, 10]\n\n        // O(1) — isEmpty\n        boolean empty = stack.isEmpty(); // false\n\n        // ── Legacy Stack<T> (still valid, just slower) ────────────────────\n        Stack<Integer> legacy = new Stack<>();\n        legacy.push(10);\n        legacy.push(20);\n        int legacyTop = legacy.peek();    // 20\n        int legacyPop = legacy.pop();     // 20\n        int pos = legacy.search(10);      // 1-based position from top\n    }\n\n    // ─────────────────────────────────────────────────────────────────────\n    // Pattern 1 — Balanced parentheses                      O(n) time/space\n    // ─────────────────────────────────────────────────────────────────────\n    static boolean isBalanced(String s) {\n        Deque<Character> stack = new ArrayDeque<>();\n        for (char ch : s.toCharArray()) {\n            if (ch == '(' || ch == '[' || ch == '{') {\n                stack.push(ch);\n            } else if (ch == ')' || ch == ']' || ch == '}') {\n                if (stack.isEmpty()) return false;\n                char open = stack.pop();\n                if ((ch == ')' && open != '(') ||\n                    (ch == ']' && open != '[') ||\n                    (ch == '}' && open != '{')) return false;\n            }\n        }\n        return stack.isEmpty();\n    }\n\n    // ─────────────────────────────────────────────────────────────────────\n    // Pattern 2 — Monotonic stack (next greater element)    O(n) time/space\n    // ─────────────────────────────────────────────────────────────────────\n    static int[] nextGreater(int[] nums) {\n        int[] result = new int[nums.length];\n        java.util.Arrays.fill(result, -1);\n        Deque<Integer> stack = new ArrayDeque<>(); // stores indices\n        for (int i = 0; i < nums.length; i++) {\n            while (!stack.isEmpty() && nums[stack.peek()] < nums[i]) {\n                result[stack.pop()] = nums[i];\n            }\n            stack.push(i);\n        }\n        return result;\n    }\n\n    // ─────────────────────────────────────────────────────────────────────\n    // Pattern 3 — Min stack (getMin in O(1))                O(n) space\n    // ─────────────────────────────────────────────────────────────────────\n    static class MinStack {\n        private final Deque<int[]> stack = new ArrayDeque<>(); // [value, minSoFar]\n\n        public void push(int val) {\n            int min = stack.isEmpty() ? val : Math.min(val, stack.peek()[1]);\n            stack.push(new int[]{val, min});\n        }\n        public int pop()    { return stack.pop()[0]; }\n        public int peek()   { return stack.peek()[0]; }\n        public int getMin() { return stack.peek()[1]; } // O(1)\n    }\n}\n"
+      },
+      {
+        "filename": "stack.cpp",
+        "language": "cpp",
+        "code": "// ─── Stack in C++ ────────────────────────────────────────────────────────────\n//\n// C++ STL provides std::stack<T> — a container adaptor defaulting to std::deque\n// underneath. You can swap the backing store: std::stack<T, std::vector<T>>\n// gives slightly better cache locality for push/pop-heavy workloads.\n\n#include <iostream>\n#include <stack>\n#include <vector>\n#include <string>\n\nint main() {\n\n    // ── std::stack (default deque backing) ───────────────────────────────\n    std::stack<int> st;\n\n    // O(1) — Push\n    st.push(10);  // [10]\n    st.push(20);  // [10, 20]\n    st.push(30);  // [10, 20, 30]\n\n    // O(1) — Peek (read top without removing)\n    int top = st.top();  // 30\n\n    // O(1) — Pop (removes top; does NOT return the value — call top() first)\n    st.pop();            // stack = [10, 20]\n\n    // O(1) — size / empty\n    std::size_t sz = st.size();  // 2\n    bool empty     = st.empty(); // false\n\n    // ── Vector-backed stack (better cache locality) ───────────────────────\n    std::stack<int, std::vector<int>> vec_stack;\n    vec_stack.push(10);\n    vec_stack.push(20);\n    int v = vec_stack.top(); // 20\n    vec_stack.pop();\n\n    return 0;\n}\n\n// ─────────────────────────────────────────────────────────────────────────────\n// Pattern 1 — Balanced parentheses                          O(n) time/space\n// ─────────────────────────────────────────────────────────────────────────────\nbool isBalanced(const std::string& s) {\n    std::stack<char> st;\n    for (char ch : s) {\n        if (ch == '(' || ch == '[' || ch == '{') {\n            st.push(ch);\n        } else if (ch == ')' || ch == ']' || ch == '}') {\n            if (st.empty()) return false;\n            char open = st.top(); st.pop();\n            if ((ch == ')' && open != '(') ||\n                (ch == ']' && open != '[') ||\n                (ch == '}' && open != '{')) return false;\n        }\n    }\n    return st.empty();\n}\n\n// ─────────────────────────────────────────────────────────────────────────────\n// Pattern 2 — Monotonic stack (next greater element)        O(n) time/space\n// ─────────────────────────────────────────────────────────────────────────────\nstd::vector<int> nextGreater(const std::vector<int>& nums) {\n    std::vector<int> result(nums.size(), -1);\n    std::stack<int> st; // stores indices\n    for (int i = 0; i < (int)nums.size(); i++) {\n        while (!st.empty() && nums[st.top()] < nums[i]) {\n            result[st.top()] = nums[i];\n            st.pop();\n        }\n        st.push(i);\n    }\n    return result;\n}\n\n// ─────────────────────────────────────────────────────────────────────────────\n// Pattern 3 — Min stack (getMin in O(1))                    O(n) space\n// ─────────────────────────────────────────────────────────────────────────────\nclass MinStack {\n    std::stack<std::pair<int,int>> st; // {value, minSoFar}\npublic:\n    void push(int val) {\n        int mn = st.empty() ? val : std::min(val, st.top().second);\n        st.push({val, mn});\n    }\n    void pop()     { st.pop(); }\n    int  top()     { return st.top().first; }\n    int  getMin()  { return st.top().second; } // O(1)\n};\n"
+      }
+    ]
+  },
+  "footerAlerts": [
+    {
+      "severity": "success",
+      "title": "When stacks shine",
+      "items": [
+        "Balanced parentheses / bracket matching — push opens, pop on close and verify.",
+        "Monotonic stack — maintain a decreasing/increasing sequence to find next greater/smaller in O(n).",
+        "Expression evaluation (RPN, infix parsing) — operands on stack, apply operator when seen.",
+        "Undo / redo — push actions onto two stacks; swap on undo/redo.",
+        "DFS iteratively — replace the call stack with an explicit stack to avoid recursion limits.",
+        "Min/max stack — track running min or max in O(1) per operation by storing it alongside each value."
+      ]
+    },
+    {
+      "severity": "warning",
+      "title": "When to consider alternatives",
+      "items": [
+        "Need FIFO ordering → use a Queue or Deque instead.",
+        "Need random access by index → use an Array.",
+        "Need O(log n) min/max with arbitrary inserts → use a Heap (priority queue)."
+      ]
+    }
+  ]
+}

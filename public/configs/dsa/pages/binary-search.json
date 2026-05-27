@@ -1,0 +1,155 @@
+{
+  "id": "binary-search",
+  "header": {
+    "backTo": "/dsa",
+    "overline": "Searching · Medium",
+    "title": "Binary Search",
+    "description": "An efficient search algorithm that finds a target in a sorted array by repeatedly dividing the search space in half."
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "items": [
+      "Prerequisite: array must be sorted in ascending order.",
+      "Start with left = 0 and right = n - 1.",
+      "Compute mid = (left + right) / 2 and compare array[mid] with target.",
+      "If equal, return mid. If smaller, search right half. If larger, search left half.",
+      "Repeat until found or left > right."
+    ]
+  },
+  "algorithmSteps": [
+    {
+      "id": 1,
+      "title": "Step 1",
+      "text": "Start with entire sorted array. Initialize left=0, right=n-1."
+    },
+    {
+      "id": 2,
+      "title": "Step 2",
+      "text": "Calculate middle index: mid = (left + right) / 2."
+    },
+    {
+      "id": 3,
+      "title": "Step 3",
+      "text": "Compare array[mid] with target."
+    },
+    {
+      "id": 4,
+      "title": "Step 4",
+      "text": "If array[mid] equals target — found! Return mid."
+    },
+    {
+      "id": 5,
+      "title": "Step 5",
+      "text": "If array[mid] > target — search left half (right = mid - 1)."
+    },
+    {
+      "id": 6,
+      "title": "Step 6",
+      "text": "If array[mid] < target — search right half (left = mid + 1)."
+    },
+    {
+      "id": 7,
+      "title": "Step 7",
+      "text": "If left > right — target not found, return -1."
+    }
+  ],
+  "complexity": [
+    {
+      "label": "Time · best",
+      "value": "O(1)"
+    },
+    {
+      "label": "Time · average",
+      "value": "O(log n)"
+    },
+    {
+      "label": "Time · worst",
+      "value": "O(log n)"
+    },
+    {
+      "label": "Space",
+      "value": "O(1)"
+    },
+    {
+      "label": "Prerequisite",
+      "value": "Sorted array",
+      "mono": false
+    }
+  ],
+  "visualization": {
+    "id": "binary-search",
+    "kind": "array-bars",
+    "defaults": {
+      "arrayInput": "2, 5, 8, 12, 16, 23, 38, 56, 72, 91",
+      "targetInput": "23",
+      "autoplayIntervalMs": 900
+    }
+  },
+  "legend": [
+    {
+      "label": "Search range",
+      "colorKey": "searchRange"
+    },
+    {
+      "label": "Eliminated",
+      "colorKey": "eliminated"
+    },
+    {
+      "label": "Comparing",
+      "colorKey": "comparing"
+    },
+    {
+      "label": "Found",
+      "colorKey": "found"
+    }
+  ],
+  "code": {
+    "title": "Solution code",
+    "files": [
+      {
+        "filename": "binarySearch.js",
+        "language": "javascript",
+        "code": "function binarySearch(arr, target) {\n  let left = 0;\n  let right = arr.length - 1;\n\n  while (left <= right) {\n    const mid = Math.floor((left + right) / 2);\n\n    if (arr[mid] === target) {\n      return mid;\n    } else if (arr[mid] < target) {\n      left = mid + 1;\n    } else {\n      right = mid - 1;\n    }\n  }\n\n  return -1;\n}"
+      },
+      {
+        "filename": "binary_search.py",
+        "language": "python",
+        "code": "def binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            return mid\n        if arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1"
+      },
+      {
+        "filename": "BinarySearch.java",
+        "language": "java",
+        "code": "public static int binarySearch(int[] arr, int target) {\n    int left = 0, right = arr.length - 1;\n    while (left <= right) {\n        int mid = left + (right - left) / 2;\n        if (arr[mid] == target) return mid;\n        if (arr[mid] < target) left = mid + 1;\n        else right = mid - 1;\n    }\n    return -1;\n}"
+      }
+    ]
+  },
+  "footerAlerts": [
+    {
+      "severity": "success",
+      "title": "Why Binary Search is powerful",
+      "items": [
+        "O(log n) time — each step eliminates half the remaining elements.",
+        "Only ~30 comparisons for a billion elements.",
+        "Foundation for answer-space search and many interview patterns."
+      ]
+    },
+    {
+      "severity": "info",
+      "title": "Real-world applications",
+      "items": [
+        "Database indexes and sorted lookups.",
+        "Git bisect for finding regressions.",
+        "Dictionary / catalog search on sorted data."
+      ]
+    },
+    {
+      "severity": "warning",
+      "title": "Prerequisites",
+      "items": [
+        "Data must be sorted.",
+        "Needs random access (arrays, not linked lists)."
+      ]
+    }
+  ],
+  "shortcuts": "← previous step · → next step · Space play/pause · R reset"
+}

@@ -1,0 +1,28 @@
+flowchart LR
+  subgraph DataFiles["Data files (src/data)"]
+    CS["caseStudies.js"]
+    RF["references.js"]
+    DSA["dsa.js"]
+  end
+
+  subgraph Registries["Registries (src/data/registries)"]
+    CSR["caseStudyRegistry.js\nre-export + path resolvers"]
+    RFR["referenceRegistry.js\nre-export + path resolvers"]
+    DSAR["dsaRegistry.js\ncatalog + public JSON loaders"]
+    MLR["moduleListingRegistry.js\nlisting layout JSON"]
+  end
+
+  subgraph PublicJson["public/configs"]
+    CSJ["caseStudies/*.json"]
+    RFJ["references/*.json"]
+    DSAJ["dsa/pages/*.json\ndsa/topic-pages.json"]
+    MLJ["modulePageLayouts.json"]
+  end
+
+  CS --> CSR
+  RF --> RFR
+  DSA --> DSAR
+  CSR --> CSJ
+  RFR --> RFJ
+  DSAR --> DSAJ
+  MLR --> MLJ

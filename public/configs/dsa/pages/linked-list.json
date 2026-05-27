@@ -1,0 +1,156 @@
+{
+  "id": "linked-list",
+  "header": {
+    "backTo": "/dsa",
+    "overline": "Data Structures · Easy",
+    "title": "Linked List",
+    "description": "A linked list stores elements as independent nodes scattered in memory, each holding a value and a pointer to the next node. Unlike arrays there is no contiguous block — indexing costs O(n), but inserting or deleting at a known node costs O(1) with no shifting required."
+  },
+  "howItWorks": {
+    "title": "How linked lists work",
+    "items": [
+      "Each node stores two things: a value and a next pointer to the following node. The last node's next is null, marking the end of the list.",
+      "The list is anchored by a head pointer. Traversal always starts at head and follows next pointers one by one — there is no shortcut to index n.",
+      "Prepending (insert at head) is O(1): create a node, point its next to the current head, then update head.",
+      "Appending to the tail is O(1) with a tail pointer, or O(n) without one — you must walk the entire list to find the last node.",
+      "Inserting or deleting in the middle requires traversing to the right position first (O(n)), then updating two pointers — no elements are shifted.",
+      "Because nodes are not contiguous, linked lists are cache-unfriendly compared to arrays — each pointer hop may cause a cache miss."
+    ]
+  },
+  "visualization": {
+    "id": "linked-list",
+    "kind": "linked-list",
+    "defaults": {
+      "initialList": [
+        10,
+        20,
+        30,
+        40
+      ]
+    }
+  },
+  "code": {
+    "title": "Linked list operations",
+    "files": [
+      {
+        "filename": "linkedList.js",
+        "language": "javascript",
+        "code": "// ─── Linked List in JavaScript ──────────────────────────────────────────────\n\nclass Node {\n  constructor(value) {\n    this.value = value;\n    this.next = null;\n  }\n}\n\nclass LinkedList {\n  constructor() {\n    this.head = null;\n    this.tail = null;\n    this.size = 0;\n  }\n\n  // O(1) — Prepend (insert at head)\n  prepend(value) {\n    const node = new Node(value);\n    if (!this.head) { this.head = this.tail = node; }\n    else { node.next = this.head; this.head = node; }\n    this.size++;\n  }\n\n  // O(1) with tail ptr — Append (insert at tail)\n  append(value) {\n    const node = new Node(value);\n    if (!this.tail) { this.head = this.tail = node; }\n    else { this.tail.next = node; this.tail = node; }\n    this.size++;\n  }\n\n  // O(n) — Insert at index\n  insertAt(index, value) {\n    if (index < 0 || index > this.size) throw new RangeError('Index out of bounds');\n    if (index === 0) return this.prepend(value);\n    if (index === this.size) return this.append(value);\n    const node = new Node(value);\n    let curr = this.head;\n    for (let i = 0; i < index - 1; i++) curr = curr.next;\n    node.next = curr.next;\n    curr.next = node;\n    this.size++;\n  }\n\n  // O(1) — Delete head\n  deleteHead() {\n    if (!this.head) return null;\n    const val = this.head.value;\n    this.head = this.head.next;\n    if (!this.head) this.tail = null;\n    this.size--;\n    return val;\n  }\n\n  // O(n) — Delete tail\n  deleteTail() {\n    if (!this.head) return null;\n    if (this.head === this.tail) {\n      const val = this.head.value;\n      this.head = this.tail = null;\n      this.size--;\n      return val;\n    }\n    let curr = this.head;\n    while (curr.next !== this.tail) curr = curr.next;\n    const val = this.tail.value;\n    curr.next = null;\n    this.tail = curr;\n    this.size--;\n    return val;\n  }\n\n  // O(n) — Search\n  search(value) {\n    let curr = this.head, index = 0;\n    while (curr) {\n      if (curr.value === value) return index;\n      curr = curr.next; index++;\n    }\n    return -1;\n  }\n\n  // O(n) — Get by index\n  get(index) {\n    if (index < 0 || index >= this.size) throw new RangeError('Index out of bounds');\n    let curr = this.head;\n    for (let i = 0; i < index; i++) curr = curr.next;\n    return curr.value;\n  }\n\n  // O(n) — Reverse in-place\n  reverse() {\n    let prev = null, curr = this.head;\n    this.tail = this.head;\n    while (curr) {\n      const next = curr.next;\n      curr.next = prev;\n      prev = curr; curr = next;\n    }\n    this.head = prev;\n  }\n\n  // O(n), O(1) — Detect cycle (Floyd's tortoise and hare)\n  hasCycle() {\n    let slow = this.head, fast = this.head;\n    while (fast && fast.next) {\n      slow = slow.next;\n      fast = fast.next.next;\n      if (slow === fast) return true;\n    }\n    return false;\n  }\n}\n\n// ── Doubly Linked List Node ──────────────────────────────────────────────\nclass DNode {\n  constructor(value) {\n    this.value = value;\n    this.next = null;\n    this.prev = null;   // extra pointer — O(1) delete without predecessor\n  }\n}\n\n// ── Circular Linked List — tail.next points back to head ─────────────────\nclass CircularLinkedList {\n  constructor() { this.head = null; this.size = 0; }\n\n  append(value) {\n    const node = new Node(value);\n    if (!this.head) { node.next = node; this.head = node; }\n    else {\n      let tail = this.head;\n      while (tail.next !== this.head) tail = tail.next;\n      tail.next = node;\n      node.next = this.head;\n    }\n    this.size++;\n  }\n}\n"
+      },
+      {
+        "filename": "linked_list.py",
+        "language": "python",
+        "code": "# ─── Linked List in Python ──────────────────────────────────────────────────\n\nclass Node:\n    __slots__ = ('value', 'next')\n    def __init__(self, value):\n        self.value = value\n        self.next  = None\n\nclass LinkedList:\n    def __init__(self):\n        self.head = None\n        self.tail = None\n        self.size = 0\n\n    def prepend(self, value):\n        node = Node(value)\n        if not self.head: self.head = self.tail = node\n        else: node.next = self.head; self.head = node\n        self.size += 1\n\n    def append(self, value):\n        node = Node(value)\n        if not self.tail: self.head = self.tail = node\n        else: self.tail.next = node; self.tail = node\n        self.size += 1\n\n    def insert_at(self, index, value):\n        if not (0 <= index <= self.size): raise IndexError('Out of bounds')\n        if index == 0: return self.prepend(value)\n        if index == self.size: return self.append(value)\n        node = Node(value)\n        curr = self.head\n        for _ in range(index - 1): curr = curr.next\n        node.next = curr.next; curr.next = node\n        self.size += 1\n\n    def delete_head(self):\n        if not self.head: return None\n        val = self.head.value\n        self.head = self.head.next\n        if not self.head: self.tail = None\n        self.size -= 1\n        return val\n\n    def delete_tail(self):\n        if not self.head: return None\n        if self.head is self.tail:\n            val = self.head.value; self.head = self.tail = None; self.size -= 1; return val\n        curr = self.head\n        while curr.next is not self.tail: curr = curr.next\n        val = self.tail.value; curr.next = None; self.tail = curr\n        self.size -= 1; return val\n\n    def search(self, value):\n        curr, idx = self.head, 0\n        while curr:\n            if curr.value == value: return idx\n            curr, idx = curr.next, idx + 1\n        return -1\n\n    def get(self, index):\n        if not (0 <= index < self.size): raise IndexError('Out of bounds')\n        curr = self.head\n        for _ in range(index): curr = curr.next\n        return curr.value\n\n    def reverse(self):\n        prev, curr = None, self.head\n        self.tail = self.head\n        while curr:\n            curr.next, prev, curr = prev, curr, curr.next\n        self.head = prev\n\n    def has_cycle(self):\n        slow = fast = self.head\n        while fast and fast.next:\n            slow, fast = slow.next, fast.next.next\n            if slow is fast: return True\n        return False\n\n# ── Doubly node — adds prev pointer ──────────────────────────────────────\nclass DNode:\n    __slots__ = ('value', 'next', 'prev')\n    def __init__(self, value):\n        self.value = value\n        self.next = self.prev = None\n"
+      },
+      {
+        "filename": "LinkedList.java",
+        "language": "java",
+        "code": "// ─── Linked List in Java ─────────────────────────────────────────────────────\n\npublic class LinkedList<T> {\n\n    private static class Node<T> {\n        T value; Node<T> next;\n        Node(T v) { value = v; }\n    }\n\n    private Node<T> head, tail;\n    private int size;\n\n    public void prepend(T value) {\n        Node<T> node = new Node<>(value);\n        if (head == null) { head = tail = node; }\n        else { node.next = head; head = node; }\n        size++;\n    }\n\n    public void append(T value) {\n        Node<T> node = new Node<>(value);\n        if (tail == null) { head = tail = node; }\n        else { tail.next = node; tail = node; }\n        size++;\n    }\n\n    public void insertAt(int index, T value) {\n        if (index < 0 || index > size) throw new IndexOutOfBoundsException();\n        if (index == 0)    { prepend(value); return; }\n        if (index == size) { append(value);  return; }\n        Node<T> node = new Node<>(value), curr = head;\n        for (int i = 0; i < index - 1; i++) curr = curr.next;\n        node.next = curr.next; curr.next = node; size++;\n    }\n\n    public T deleteHead() {\n        if (head == null) return null;\n        T val = head.value; head = head.next;\n        if (head == null) tail = null;\n        size--; return val;\n    }\n\n    public T deleteTail() {\n        if (head == null) return null;\n        if (head == tail) { T v = head.value; head = tail = null; size--; return v; }\n        Node<T> curr = head;\n        while (curr.next != tail) curr = curr.next;\n        T val = tail.value; curr.next = null; tail = curr; size--; return val;\n    }\n\n    public int search(T value) {\n        Node<T> curr = head; int idx = 0;\n        while (curr != null) {\n            if (curr.value.equals(value)) return idx;\n            curr = curr.next; idx++;\n        }\n        return -1;\n    }\n\n    public T get(int index) {\n        if (index < 0 || index >= size) throw new IndexOutOfBoundsException();\n        Node<T> curr = head;\n        for (int i = 0; i < index; i++) curr = curr.next;\n        return curr.value;\n    }\n\n    public void reverse() {\n        Node<T> prev = null, curr = head; tail = head;\n        while (curr != null) {\n            Node<T> next = curr.next; curr.next = prev; prev = curr; curr = next;\n        }\n        head = prev;\n    }\n\n    public boolean hasCycle() {\n        Node<T> slow = head, fast = head;\n        while (fast != null && fast.next != null) {\n            slow = slow.next; fast = fast.next.next;\n            if (slow == fast) return true;\n        }\n        return false;\n    }\n\n    public int size() { return size; }\n}\n"
+      },
+      {
+        "filename": "linked_list.cpp",
+        "language": "cpp",
+        "code": "// ─── Linked List in C++ ──────────────────────────────────────────────────────\n\n#include <stdexcept>\n\ntemplate<typename T>\nclass LinkedList {\n    struct Node { T value; Node* next = nullptr; explicit Node(T v) : value(v) {} };\n    Node* head = nullptr; Node* tail = nullptr; int sz = 0;\n\npublic:\n    ~LinkedList() { Node* c = head; while (c) { Node* n = c->next; delete c; c = n; } }\n\n    void prepend(T v) {\n        Node* n = new Node(v);\n        if (!head) head = tail = n; else { n->next = head; head = n; } sz++;\n    }\n    void append(T v) {\n        Node* n = new Node(v);\n        if (!tail) head = tail = n; else { tail->next = n; tail = n; } sz++;\n    }\n    T deleteHead() {\n        if (!head) throw std::underflow_error(\"empty\");\n        T v = head->value; Node* old = head; head = head->next;\n        if (!head) tail = nullptr; delete old; sz--; return v;\n    }\n    T deleteTail() {\n        if (!head) throw std::underflow_error(\"empty\");\n        if (head == tail) { T v = head->value; delete head; head = tail = nullptr; sz--; return v; }\n        Node* c = head; while (c->next != tail) c = c->next;\n        T v = tail->value; delete tail; tail = c; tail->next = nullptr; sz--; return v;\n    }\n    int search(T v) const {\n        Node* c = head; int i = 0;\n        while (c) { if (c->value == v) return i; c = c->next; i++; } return -1;\n    }\n    T get(int i) const {\n        if (i < 0 || i >= sz) throw std::out_of_range(\"out of bounds\");\n        Node* c = head; for (int j = 0; j < i; j++) c = c->next; return c->value;\n    }\n    void reverse() {\n        Node* prev = nullptr; Node* c = head; tail = head;\n        while (c) { Node* n = c->next; c->next = prev; prev = c; c = n; } head = prev;\n    }\n    bool hasCycle() const {\n        Node* s = head; Node* f = head;\n        while (f && f->next) { s = s->next; f = f->next->next; if (s == f) return true; }\n        return false;\n    }\n    int size() const { return sz; }\n};\n"
+      }
+    ]
+  },
+  "linkedListTypes": [
+    {
+      "id": "singly",
+      "label": "Singly Linked List",
+      "structure": "HEAD → [A|→] → [B|→] → [C|→] → NULL",
+      "description": "Each node holds a value and one next pointer. The simplest form — minimal memory overhead and straightforward traversal, but movement is one-directional only.",
+      "characteristics": [
+        "One pointer per node — lowest memory footprint",
+        "Forward traversal only — cannot go backward",
+        "Delete requires the predecessor node to re-link",
+        "Prepend O(1), all else O(n) without extra bookkeeping"
+      ],
+      "useCases": [
+        "Simple stacks and queues",
+        "Hash table chaining (collision buckets)",
+        "Undo history where only forward replay matters"
+      ]
+    },
+    {
+      "id": "doubly",
+      "label": "Doubly Linked List",
+      "structure": "HEAD ⇄ [←|A|→] ⇄ [←|B|→] ⇄ [←|C|→] ⇄ NULL",
+      "description": "Each node has both next and prev pointers. Backward traversal is free, and deleting a known node is O(1) because you already have the predecessor via prev.",
+      "characteristics": [
+        "Two pointers per node — slightly more memory",
+        "Bidirectional traversal — iterate forward or backward",
+        "O(1) delete at any known node — no predecessor search needed",
+        "Used by Java LinkedList, Python collections.deque, browser history"
+      ],
+      "useCases": [
+        "Browser forward/back navigation",
+        "LRU cache (O(1) eviction)",
+        "Text editor cursor movement",
+        "Python deque"
+      ]
+    },
+    {
+      "id": "circular",
+      "label": "Circular Singly Linked List",
+      "structure": "HEAD → [A|→] → [B|→] → [C|→] → (back to HEAD)",
+      "description": "Tail's next pointer wraps back to head instead of null. Traversal never truly ends — you cycle through nodes indefinitely until you detect you've returned to the start.",
+      "characteristics": [
+        "No null terminus — tail.next === head",
+        "Any node can act as the start point",
+        "Detect full cycle by checking if curr.next === head",
+        "Efficient for repeatedly cycling through a fixed set"
+      ],
+      "useCases": [
+        "Round-robin CPU scheduling",
+        "Music/video playlist looping",
+        "Token ring network protocol",
+        "Game turn rotation"
+      ]
+    },
+    {
+      "id": "circular-doubly",
+      "label": "Circular Doubly Linked List",
+      "structure": "(HEAD) ⇄ [←|A|→] ⇄ [←|B|→] ⇄ [←|C|→] ⇄ (back to HEAD)",
+      "description": "Combines doubly linked and circular properties — every node has prev and next, and the tail and head are connected in both directions. Maximum flexibility at maximum pointer cost.",
+      "characteristics": [
+        "Four pointer updates per insert/delete",
+        "Traverse forward or backward from any node",
+        "O(1) insert and delete anywhere with a node reference",
+        "Used by the Linux kernel CFS scheduler and many OS task queues"
+      ],
+      "useCases": [
+        "Linux kernel task scheduling (struct list_head)",
+        "OS ready queues",
+        "Deque implementations",
+        "Fibonacci heap internals"
+      ]
+    }
+  ],
+  "footerAlerts": [
+    {
+      "severity": "success",
+      "title": "When linked lists shine",
+      "items": [
+        "Frequent insert/delete at the head or a known node — O(1) with no shifting.",
+        "Implementing stacks and queues — push/pop map directly to prepend/deleteHead.",
+        "Unknown or highly variable size — no pre-allocation or resizing needed.",
+        "Classic interview patterns: reverse, detect cycle (Floyd's), merge two sorted lists, find the middle node."
+      ]
+    },
+    {
+      "severity": "warning",
+      "title": "When to consider alternatives",
+      "items": [
+        "Random access by index → use an array (O(1) vs O(n)).",
+        "Cache-sensitive iteration over large datasets → arrays have far better locality.",
+        "Frequent search by value → use a hash set/map for O(1) average lookup."
+      ]
+    }
+  ],
+  "hints": [
+    "Always clarify whether a tail pointer is maintained — it changes append from O(n) to O(1).",
+    "Draw the pointer updates before coding any insertion or deletion to avoid off-by-one bugs.",
+    "Edge cases to always handle: empty list, single-node list, operating on head or tail."
+  ]
+}

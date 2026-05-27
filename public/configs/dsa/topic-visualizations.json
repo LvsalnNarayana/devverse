@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "description": "Catalog of visualization types used by DSA topic pages.",
+    "flow": [
+      "dsaTopicPages.js maps topic id -> visualizationId",
+      "visualizationRegistry.js lazy-loads the React component for each id",
+      "DSATopicLayout renders the loaded component in the main column"
+    ],
+    "kinds": {
+      "array-bars": "Bar chart on array indices (search, sort)",
+      "linked-list": "Nodes with next pointers",
+      "stack": "Vertical LIFO blocks",
+      "queue": "Horizontal FIFO blocks",
+      "heap": "Binary heap tree layout",
+      "tree": "General tree / BST layout",
+      "graph": "Nodes and edges",
+      "matrix": "2D grid cells",
+      "sorting": "Array bars with sort-specific highlights"
+    }
+  },
+  "binary-search": {
+    "kind": "array-bars",
+    "label": "Binary Search (sorted array)",
+    "status": "ready"
+  },
+  "linear-search": {
+    "kind": "array-bars",
+    "label": "Linear Search",
+    "status": "planned"
+  },
+  "bubble-sort": {
+    "kind": "sorting",
+    "label": "Bubble Sort",
+    "status": "planned"
+  },
+  "merge-sort": {
+    "kind": "sorting",
+    "label": "Merge Sort",
+    "status": "planned"
+  },
+  "quick-sort": {
+    "kind": "sorting",
+    "label": "Quick Sort",
+    "status": "planned"
+  },
+  "linked-list": {
+    "kind": "linked-list",
+    "label": "Linked List",
+    "status": "planned"
+  },
+  "stack": {
+    "kind": "stack",
+    "label": "Stack",
+    "status": "ready"
+  },
+  "queue": {
+    "kind": "queue",
+    "label": "Queue",
+    "status": "planned"
+  },
+  "heap": {
+    "kind": "heap",
+    "label": "Binary Heap",
+    "status": "planned"
+  },
+  "binary-search-tree": {
+    "kind": "tree",
+    "label": "Binary Search Tree",
+    "status": "planned"
+  },
+  "bfs": {
+    "kind": "graph",
+    "label": "Breadth-First Search",
+    "status": "planned"
+  },
+  "dfs": {
+    "kind": "graph",
+    "label": "Depth-First Search",
+    "status": "planned"
+  },
+  "array": {
+    "kind": "array-bars",
+    "label": "Array basics",
+    "status": "ready"
+  }
+}

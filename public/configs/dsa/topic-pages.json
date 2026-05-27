@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "description": "DSA topic page registry — maps catalog topic ids to public content paths and visualization component ids.",
+    "flow": [
+      "/dsa/:id -> dsaRegistry.getTopicPage(id)",
+      "fetch contentPath JSON from public/configs/dsa/pages/",
+      "visualizationRegistry.js lazy-loads React component by visualizationId"
+    ]
+  },
+  "array": {
+    "contentPath": "/configs/dsa/pages/array.json",
+    "visualizationId": "array"
+  },
+  "stack": {
+    "contentPath": "/configs/dsa/pages/stack.json",
+    "visualizationId": "stack"
+  },
+  "linked-list": {
+    "contentPath": "/configs/dsa/pages/linked-list.json",
+    "visualizationId": "linked-list"
+  }
+}

@@ -1,0 +1,23 @@
+sequenceDiagram
+  participant User
+  participant Detail as DSADetail
+  participant Hook as useDsaTopicPage
+  participant Catalog as dsa.js via dsaRegistry
+  participant TopicReg as public/configs/dsa/topic-pages.json
+  participant Content as public/configs/dsa/pages/*.json
+  participant VizReg as visualizationRegistry.js
+  participant Layout as DSATopicLayout
+
+  User->>Detail: /dsa/:id
+  Detail->>Hook: topicId
+  Hook->>Catalog: getTopicById(id)
+  Hook->>TopicReg: getDsaTopicPage(id)
+  TopicReg-->>Hook: contentPath + visualizationId
+  par Load content and visualization
+    Hook->>Content: fetch JSON page body
+    Hook->>VizReg: loadVisualization(id)
+  end
+  Content-->>Hook: header, steps, code, viz defaults
+  VizReg-->>Hook: React component
+  Hook-->>Layout: content + Visualization
+  Layout-->>User: topic page with interactive viz

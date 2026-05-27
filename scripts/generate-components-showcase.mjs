@@ -1,0 +1,756 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const outPath = join(root, 'public/configs/components/showcase.json');
+
+const CAROUSEL_SLIDES = [
+  {
+    title: 'Aggregation Pipeline Mastery',
+    description: 'MongoDB $match, $group, $lookup, and $facet in production analytics.',
+    tags: ['MongoDB', 'Case Study'],
+    to: '/blogs-and-case-studies/aggregation-pipeline-mastery',
+  },
+  {
+    title: 'Kafka Event Streaming',
+    description: 'Producers, consumers, partitions, and delivery semantics.',
+    tags: ['Kafka', 'Messaging'],
+    to: '/case-studies',
+  },
+  {
+    title: 'Binary Search Patterns',
+    description: 'Classic divide-and-conquer with visualization-friendly steps.',
+    tags: ['DSA', 'Algorithms'],
+    to: '/dsa',
+  },
+  {
+    title: 'Redis Caching Layer',
+    description: 'TTL strategies, cache-aside, and invalidation patterns.',
+    tags: ['Redis', 'Performance'],
+  },
+  {
+    title: 'API Gateway Routing',
+    description: 'Rate limits, auth, and service discovery at the edge.',
+    tags: ['Gateway', 'Microservices'],
+  },
+  {
+    title: 'Postgres Index Tuning',
+    description: 'B-tree vs GIN, explain plans, and slow-query workflows.',
+    tags: ['Postgres', 'Database'],
+  },
+  {
+    title: 'Docker Compose Stacks',
+    description: 'Multi-service local dev with health checks and volumes.',
+    tags: ['Docker', 'DevOps'],
+  },
+  {
+    title: 'OpenTelemetry Traces',
+    description: 'Distributed tracing across microservices with exemplars.',
+    tags: ['Observability', 'SRE'],
+  },
+];
+
+const ALERT_SEVERITIES = ['info', 'success', 'warning', 'error', 'tip', 'note'];
+const TYPOGRAPHY_VARIANTS = ['body1', 'body2', 'subtitle1', 'subtitle2', 'caption'];
+const TAG_SIZES = ['xs', 'sm', 'md', 'lg'];
+const TAG_VARIANTS = ['soft', 'outline', 'solid'];
+const STAT_COLORS = ['primary', 'secondary', 'success', 'warning', 'info', 'error'];
+
+const showcase = {
+  id: 'components-showcase',
+  title: 'Deverse component library',
+  content:
+    'Declarative JSON blocks rendered via PageContent and PageBlockRenderer. Section ids match componentsCatalog.js.',
+  sections: [
+    {
+      id: 'overview',
+      title: 'Overview',
+      description:
+        'All shared primitives used by PageBlockRenderer. Each section shows every variant; JSON-driven pages use the same components via block types.',
+      blocks: [
+        {
+          type: 'sectionHeader',
+          eyebrow: 'Design system',
+          title: 'Deverse component library',
+          description:
+            'Scroll the table of contents or use in-page headings. Toggle carousel controls in the Carousel section.',
+        },
+      ],
+    },
+    {
+      id: 'typography',
+      title: 'Typography & HtmlContent',
+      description: 'Rich HTML strings mapped to MUI typography variants.',
+      blocks: TYPOGRAPHY_VARIANTS.map((variant) => ({
+        type: 'variantGroup',
+        label: `variant="${variant}"`,
+        blocks: [
+          {
+            type: 'typography',
+            variant,
+            html: `<p><strong>${variant}</strong> — body copy with <code>inline code</code> and <a href="#">links</a>.</p>`,
+          },
+        ],
+      })),
+    },
+    {
+      id: 'section-header',
+      title: 'SectionHeader',
+      description: 'Eyebrow, title, description, alignment, and divider.',
+      blocks: [
+        {
+          type: 'variantGroup',
+          label: 'Default',
+          blocks: [
+            {
+              type: 'sectionHeader',
+              eyebrow: 'Eyebrow',
+              title: 'Section title',
+              description: 'Supporting description for the section.',
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'With divider',
+          blocks: [
+            {
+              type: 'sectionHeader',
+              title: 'With bottom divider',
+              description: 'Separates header from content.',
+              divider: true,
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Centered',
+          blocks: [
+            {
+              type: 'sectionHeader',
+              title: 'Centered header',
+              description: 'Used on marketing-style sections.',
+              align: 'center',
+              sx: { textAlign: 'center' },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'content-card',
+      title: 'ContentCard',
+      description: 'Paper-based section cards (no hover lift). Variants: outlined, tinted, callout.',
+      blocks: [
+        {
+          type: 'variantGroup',
+          blocks: [
+            {
+              type: 'sectionHeader',
+              title: 'Outlined (default)',
+              level: 'subtitle2',
+            },
+            {
+              type: 'contentCard',
+              subheading: 'Subheading',
+              eyebrow: 'Eyebrow',
+              variant: 'outlined',
+              paragraphs: [
+                '<p>Paragraph inside a content card. Does not use MuiCard hover translate.</p>',
+              ],
+            },
+            {
+              type: 'sectionHeader',
+              title: 'Tinted (Primary)',
+              level: 'subtitle2',
+            },
+            {
+              type: 'contentCard',
+              subheading: 'Tinted surface',
+              variant: 'tinted',
+              paragraphs: [
+                '<p>Uses theme <strong>primary</strong> tint — not a custom accent color.</p>',
+              ],
+            },
+            {
+              type: 'sectionHeader',
+              title: 'Callout (accent color)',
+              level: 'subtitle2',
+            },
+            {
+              type: 'contentCard',
+              subheading: 'Callout',
+              variant: 'callout',
+              accentColor: '#ed6c02',
+              paragraphs: ['<p>Left accent bar for emphasis.</p>'],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'alerts',
+      title: 'Alerts',
+      description: 'Alert, CustomAlert, InfoAlert, and HowItWorksAlert — all severity presets.',
+      blocks: [
+        {
+          type: 'variantGrid',
+          blocks: ALERT_SEVERITIES.map((severity) => ({
+            type: 'variantGroup',
+            label: `Alert — ${severity}`,
+            blocks: [
+              {
+                type: 'alert',
+                severity,
+                title: `${severity} alert`,
+                bodyHtml: `Message body for the <strong>${severity}</strong> preset with themed border and icon.`,
+              },
+            ],
+          })),
+        },
+        {
+          type: 'variantGroup',
+          label: 'CustomAlert (dismissible)',
+          blocks: [
+            {
+              type: 'customAlert',
+              severity: 'warning',
+              title: 'Dismissible',
+              dismissible: true,
+              bodyHtml: '<p>Click the close icon to collapse this alert.</p>',
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'InfoAlert — list content',
+          blocks: [
+            {
+              type: 'infoAlert',
+              severity: 'info',
+              title: 'Structured content',
+              content: {
+                type: 'list',
+                items: [
+                  'First item with <code>HTML</code>',
+                  'Second item',
+                  'Third item',
+                ],
+              },
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'HowItWorksAlert',
+          blocks: [
+            {
+              type: 'howItWorks',
+              severity: 'tip',
+              title: 'How it works',
+              items: [
+                'Load JSON from public/configs (e.g. configs/components/showcase.json)',
+                'Parse blocks with parsePageContent',
+                'Render via PageBlockRenderer',
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'lists',
+      title: 'Lists',
+      description: 'Ordered and unordered HTML lists via block renderer.',
+      blocks: [
+        {
+          type: 'variantGroup',
+          label: 'Unordered',
+          blocks: [
+            {
+              type: 'list',
+              items: [
+                '<li>First item</li>',
+                '<li>Second with <strong>HTML</strong></li>',
+                '<li>Third item</li>',
+              ],
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Ordered (component: ol)',
+          blocks: [
+            {
+              component: 'ol',
+              items: ['Step one', 'Step two', 'Step three'],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'tags',
+      title: 'Tags',
+      description: 'Sizes, variants, and semantic colors from getTagColor.',
+      blocks: [
+        {
+          type: 'variantGroup',
+          label: 'Sizes',
+          blocks: [
+            {
+              type: 'tags',
+              items: TAG_SIZES.map((size) => ({ label: size, size })),
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Variants',
+          blocks: [
+            {
+              type: 'tags',
+              items: TAG_VARIANTS.map((variant) => ({ label: variant, variant })),
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Selected',
+          blocks: [
+            {
+              type: 'tags',
+              items: [
+                { label: 'MongoDB', selected: true },
+                { label: 'Kafka', selected: true },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'code',
+      title: 'Code snippets',
+      description: 'Single-file and multi-tab editors with Prism highlighting.',
+      blocks: [
+        {
+          type: 'variantGroup',
+          label: 'CodeSnippet',
+          blocks: [
+            {
+              type: 'codeSnippet',
+              filename: 'example.ts',
+              language: 'typescript',
+              code: 'export const sum = (a: number, b: number) => a + b;\n\nconsole.log(sum(2, 3));',
+              showLineNumbers: true,
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'MultiTabCodeSnippet',
+          blocks: [
+            {
+              type: 'multiTabCodeSnippet',
+              title: 'Multi-file example',
+              files: [
+                { filename: 'package.json', language: 'json', code: '{\n  "name": "deverse"\n}' },
+                {
+                  filename: 'main.tsx',
+                  language: 'tsx',
+                  code: "import React from 'react';\n\nexport default function Main() {\n  return null;\n}",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'diagrams',
+      title: 'Diagrams',
+      description: 'Mermaid charts and diagram placeholders.',
+      blocks: [
+        {
+          type: 'variantGroup',
+          label: 'MermaidDiagram',
+          blocks: [
+            {
+              type: 'mermaidDiagram',
+              title: 'Request flow',
+              chart:
+                'flowchart LR\n  Client --> Gateway\n  Gateway --> Service\n  Service --> DB[(Database)]',
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Diagram (image / caption)',
+          blocks: [
+            {
+              type: 'diagram',
+              title: 'Architecture figure',
+              description: 'Pass imageSrc or drawioXml from JSON blocks.',
+              caption: 'Rendered via the diagram block type.',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'tables',
+      title: 'BasicTable',
+      description:
+        'Table variants: plain, striped, default hover, interactive rows, and comparison tones.',
+      blocks: [
+        {
+          type: 'variantGroup',
+          label: 'Plain — no hover, no stripes',
+          blocks: [
+            {
+              type: 'basicTable',
+              tableVariant: 'plain',
+              title: 'Plain table',
+              columns: [
+                { key: 'col', label: 'Column' },
+                { key: 'val', label: 'Value' },
+              ],
+              rows: [
+                { id: 1, col: 'Alpha', val: '1' },
+                { id: 2, col: 'Beta', val: '2' },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Striped — alternate rows, no hover',
+          blocks: [
+            {
+              type: 'basicTable',
+              tableVariant: 'striped',
+              title: 'Striped table',
+              columns: [
+                { key: 'name', label: 'Name' },
+                { key: 'role', label: 'Role' },
+              ],
+              rows: [
+                { id: 1, name: 'Alice', role: 'Engineer' },
+                { id: 2, name: 'Bob', role: 'SRE' },
+                { id: 3, name: 'Carol', role: 'PM' },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Default — striped + hover',
+          blocks: [
+            {
+              type: 'basicTable',
+              tableVariant: 'default',
+              title: 'Default table',
+              columns: [
+                { key: 'endpoint', label: 'Endpoint' },
+                { key: 'method', label: 'Method' },
+              ],
+              rows: [
+                { id: 1, endpoint: '/api/orders', method: 'GET' },
+                { id: 2, endpoint: '/api/pipeline', method: 'POST' },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Interactive — row hover + action icon',
+          blocks: [
+            {
+              type: 'basicTable',
+              tableVariant: 'interactive',
+              title: 'Clickable rows',
+              caption: 'Hover highlights the row; chevron indicates navigation.',
+              columns: [
+                { key: 'service', label: 'Service' },
+                { key: 'status', label: 'Status' },
+              ],
+              rows: [
+                { id: 1, service: 'order-service', status: 'Healthy' },
+                { id: 2, service: 'analytics-service', status: 'Degraded' },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Comparison — tone-coded cells',
+          blocks: [
+            {
+              type: 'basicTable',
+              tableVariant: 'comparison',
+              title: 'MongoDB vs PostgreSQL',
+              columns: [
+                { key: 'feature', label: 'Feature' },
+                { key: 'mongo', label: 'MongoDB' },
+                { key: 'postgres', label: 'PostgreSQL' },
+              ],
+              rows: [
+                {
+                  id: 1,
+                  feature: 'Schema flexibility',
+                  mongo: { value: 'High', tone: 'better' },
+                  postgres: { value: 'Low', tone: 'neutral' },
+                },
+                {
+                  id: 2,
+                  feature: 'ACID transactions',
+                  mongo: { value: 'Multi-doc (4.0+)', tone: 'neutral' },
+                  postgres: { value: 'Full', tone: 'better' },
+                },
+                {
+                  id: 3,
+                  feature: 'Horizontal scale',
+                  mongo: { value: 'Native sharding', tone: 'better' },
+                  postgres: { value: 'Extensions', tone: 'worse' },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'stats',
+      title: 'StatCard & stats grid',
+      description: 'Metric tiles with palette variants.',
+      blocks: [
+        {
+          type: 'statsGrid',
+          columns: 3,
+          stats: STAT_COLORS.map((color) => ({
+            id: color,
+            label: color,
+            value: color === 'error' ? '3' : '128',
+            color,
+          })),
+        },
+      ],
+    },
+    {
+      id: 'heatmap',
+      title: 'Heatmap',
+      description: 'Column-scaled colors using theme palette (success / warning / error / info).',
+      blocks: [
+        {
+          type: 'heatmap',
+          title: 'Latency percentiles by service',
+          caption:
+            'Theme-aware palettes per column. Lower values are greener for latency columns.',
+          rowHeader: 'Service',
+          scale: 'column',
+          columns: [
+            { key: 'p50', label: 'p50 ms', palette: 'success', lowerIsBetter: true },
+            { key: 'p95', label: 'p95 ms', palette: 'warning', lowerIsBetter: true },
+            { key: 'p99', label: 'p99 ms', palette: 'error', lowerIsBetter: true },
+            { key: 'rps', label: 'RPS', palette: 'info', lowerIsBetter: false },
+          ],
+          rows: [
+            { id: 'orders', label: 'order-service', p50: 42, p95: 88, p99: 120, rps: 2400 },
+            { id: 'analytics', label: 'analytics-service', p50: 65, p95: 140, p99: 185, rps: 890 },
+            { id: 'gateway', label: 'api-gateway', p50: 28, p95: 55, p99: 90, rps: 5200 },
+            { id: 'payments', label: 'payment-service', p50: 51, p95: 102, p99: 160, rps: 1100 },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'key-value',
+      title: 'KeyValueList',
+      description: 'Metadata rows in stack or grid layout.',
+      blocks: [
+        {
+          type: 'variantGroup',
+          label: 'Grid layout',
+          blocks: [
+            {
+              type: 'keyValueList',
+              layout: 'grid',
+              items: [
+                { label: 'Module', value: 'caseStudies' },
+                { label: 'Renderer', value: 'PageBlockRenderer' },
+                { label: 'Theme', value: 'MUI v7' },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'variantGroup',
+          label: 'Stack layout (mono values)',
+          blocks: [
+            {
+              type: 'keyValueList',
+              layout: 'stack',
+              monoValues: true,
+              items: [
+                { label: 'Repository', value: 'deverse' },
+                { label: 'Branch', value: 'main' },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'steps',
+      title: 'StepList',
+      description: 'Previous / next navigation with clickable step list.',
+      blocks: [
+        {
+          type: 'stepList',
+          steps: [
+            {
+              id: 'a',
+              title: 'Author JSON blocks',
+              description: 'Define content in public/configs/**/*.json',
+            },
+            {
+              id: 'b',
+              title: 'Wire route + loader',
+              description: 'usePageContent or PageContent',
+            },
+            {
+              id: 'c',
+              title: 'Render page',
+              description: 'PageBlockRenderer maps types to UI',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'legend',
+      title: 'VisualizationLegend',
+      description: 'Color keys for charts and heatmaps.',
+      blocks: [
+        {
+          type: 'legend',
+          items: [
+            { label: 'Healthy', color: '#4caf50' },
+            { label: 'Degraded', color: '#ff9800' },
+            { label: 'Down', color: '#f44336' },
+            { label: 'Unknown', color: '#9e9e9e' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'empty-state',
+      title: 'EmptyState',
+      description: 'Zero-results and onboarding placeholders.',
+      blocks: [
+        {
+          type: 'emptyState',
+          title: 'No results',
+          description: 'Try clearing filters or broadening your search.',
+          action: { label: 'Clear filters', to: '/components' },
+        },
+      ],
+    },
+    {
+      id: 'display-card',
+      title: 'DisplayCard',
+      description: 'Listing cards with gradient cover, tags, and CTA. Fixed 300px width below.',
+      blocks: [
+        {
+          type: 'layout',
+          sx: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 300px))',
+            gap: 2,
+          },
+          blocks: CAROUSEL_SLIDES.slice(0, 3).map((data) => ({
+            type: 'layout',
+            sx: { width: 300, maxWidth: '100%' },
+            blocks: [{ type: 'displayCard', data, cardType: 'case study' }],
+          })),
+        },
+      ],
+    },
+    {
+      id: 'carousel-card',
+      title: 'CarouselCard',
+      description: 'Promo slides for carousels.',
+      blocks: [
+        {
+          type: 'layout',
+          sx: { maxWidth: 360 },
+          blocks: [
+            {
+              type: 'carouselCard',
+              eyebrow: 'Featured',
+              title: 'Aggregation Pipeline Mastery',
+              description: 'Production MongoDB analytics patterns.',
+              tags: ['MongoDB', 'Case Study'],
+              to: '/blogs-and-case-studies/aggregation-pipeline-mastery',
+              ctaLabel: 'Read more',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'carousel',
+      title: 'Carousel',
+      description:
+        'Embla slider with fixed-width CarouselCard slides. Use the controls below to change card count, visible slides, and slide width.',
+      blocks: [
+        {
+          type: 'carouselPlayground',
+          loop: true,
+          showArrows: true,
+          showDots: true,
+          gap: 16,
+          slides: CAROUSEL_SLIDES,
+        },
+      ],
+    },
+    {
+      id: 'pattern-card',
+      title: 'PatternCard (composite block)',
+      description: 'Diagram + prompt snippet + optional mermaid — via PageBlockRenderer.',
+      blocks: [
+        {
+          type: 'patternCard',
+          subheading: 'Architecture documentation pattern',
+          introHtml:
+            '<p>Used on reference pages to bundle a figure, Claude prompt, and follow-up mermaid chart.</p>',
+          diagram: {
+            title: 'System context',
+            description: 'Placeholder when no image is uploaded yet.',
+          },
+          codeSnippet: {
+            filename: 'diagram-prompt.md',
+            language: 'markdown',
+            code: '# Prompt\n\nDraw a C4 context diagram for the analytics platform.',
+          },
+          mermaidDiagram: {
+            title: 'Generated flow',
+            chart: 'graph TD\n  A[Client] --> B[API]\n  B --> C[Service]\n  C --> D[(DB)]',
+          },
+        },
+      ],
+    },
+    {
+      id: 'filters',
+      title: 'Filters',
+      description: 'Listing-page search, sort, category, and tag filters.',
+      blocks: [{ type: 'filtersDemo' }],
+    },
+  ],
+};
+
+mkdirSync(dirname(outPath), { recursive: true });
+writeFileSync(outPath, `${JSON.stringify(showcase, null, 2)}\n`, 'utf8');
+console.log(`Wrote ${outPath}`);

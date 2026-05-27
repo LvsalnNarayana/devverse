@@ -1,0 +1,16 @@
+flowchart TD
+  Path["contentPath in catalog\n(e.g. /configs/caseStudies/foo.json)"]
+  Hook["usePageContent / loadPublicJson"]
+  Resolve{"Path prefix?"}
+  Fetch["fetch('/configs/...')\nruntime from public/"]
+  Bundle["Vite glob import\npageStructures/**/*.json"]
+  Parse["parsePageContent()\n→ meta + blocks"]
+  Render["PageBlockRenderer"]
+
+  Path --> Hook
+  Hook --> Resolve
+  Resolve -->|/configs/ or /public/| Fetch
+  Resolve -->|pageStructures/| Bundle
+  Fetch --> Parse
+  Bundle --> Parse
+  Parse --> Render

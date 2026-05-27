@@ -1,0 +1,86 @@
+{
+  "page": "/modules/ecommerce-microservices",
+  "section": "Prebuilt Modules / E-Commerce",
+  "module": "prebuiltModules",
+  "prebuiltModuleId": "ecommerce-microservices",
+  "pageStructure": "/pageStructures/prebuiltModules/EcommerceMicroservices.md",
+  "blocks": [
+    {
+      "type": "sectionHeader",
+      "eyebrow": "Prebuilt Module",
+      "title": "E-Commerce Microservices Suite",
+      "description": "Production-style Spring Boot services you can compose into a commerce platform. Each service owns its data, exposes REST APIs, and publishes domain events to Kafka.",
+      "divider": true
+    },
+    {
+      "type": "keyValueList",
+      "layout": "grid",
+      "items": [
+        { "label": "Category", "value": "E-Commerce" },
+        { "label": "Status", "value": "Active" },
+        {
+          "label": "Repository",
+          "value": "github.com/example/ecommerce-microservices"
+        }
+      ]
+    },
+    {
+      "type": "howItWorks",
+      "title": "What you get",
+      "items": [
+        "Independent deployable services with clear bounded contexts.",
+        "Shared patterns: OpenAPI contracts, Flyway migrations, structured logging.",
+        "Event-driven integration between order, payment, and inventory flows.",
+        "Replace example GitHub URLs in src/data/prebuiltModules.js with your repos."
+      ]
+    },
+    {
+      "type": "subsection",
+      "title": "Included microservices",
+      "blocks": [
+        {
+          "type": "contentCard",
+          "title": "product-service",
+          "body": "Catalog, categories, SKU metadata, and search-facing product APIs. Owns the product PostgreSQL schema.",
+          "nestedBlocks": []
+        },
+        {
+          "type": "contentCard",
+          "title": "cart-service",
+          "body": "Session and user carts, line items, promotions application. Redis-backed for fast reads.",
+          "nestedBlocks": []
+        },
+        {
+          "type": "contentCard",
+          "title": "order-service",
+          "body": "Order placement, status transitions, and saga coordination with payment and inventory.",
+          "nestedBlocks": []
+        },
+        {
+          "type": "contentCard",
+          "title": "payment-service",
+          "body": "Payment intent creation, provider webhooks, idempotent charge handling, and refund hooks.",
+          "nestedBlocks": []
+        },
+        {
+          "type": "contentCard",
+          "title": "inventory-service",
+          "body": "Stock reservations, release on cancel, and low-stock events for fulfillment.",
+          "nestedBlocks": []
+        },
+        {
+          "type": "contentCard",
+          "title": "notification-service",
+          "body": "Email/SMS templates for order confirmed, shipped, and failed payment recovery.",
+          "nestedBlocks": []
+        }
+      ]
+    },
+    {
+      "type": "alert",
+      "severity": "info",
+      "title": "GitHub",
+      "body": "Source code and per-service README files live in the monorepo linked from the catalog entry (githubUrl on the detail header)."
+    }
+  ]
+}

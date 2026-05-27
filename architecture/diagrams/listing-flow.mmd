@@ -1,0 +1,18 @@
+sequenceDiagram
+  participant User
+  participant Page as Listing page wrapper
+  participant Hook as useModulePageLayout
+  participant Public as public/configs/modulePageLayouts.json
+  participant Layout as ModuleListingLayout
+  participant Filters as useFilters
+  participant Data as Catalog JS
+
+  User->>Page: Open /dsa or /case-studies or /references
+  Page->>Hook: moduleKey = dsa | caseStudies | references
+  Hook->>Public: fetch /configs/modulePageLayouts.json
+  Public-->>Hook: config section for module
+  Page->>Data: import items, tags, option arrays
+  Page->>Layout: config + items + optionsBySource
+  Layout->>Filters: apply search, selects, tags, sort
+  Filters-->>Layout: filteredItems
+  Layout-->>User: paginated DisplayCard grid

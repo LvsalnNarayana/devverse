@@ -1,0 +1,144 @@
+{
+  "page": "/blogs-and-case-studies/aggregation-pipeline-mastery",
+  "section": "Case Studies / MongoDB",
+  "module": "caseStudies",
+  "caseStudyId": "aggregation-pipeline-mastery",
+  "pageStructure": "/pageStructures/caseStudies/AggregationPipelineMastery.md",
+  "blocks": [
+    {
+      "type": "sectionHeader",
+      "eyebrow": "Case Study",
+      "title": "Aggregation Pipeline Mastery",
+      "description": "Complex data transformations using $match, $group, $lookup, $unwind, and $facet.",
+      "divider": true
+    },
+    {
+      "type": "keyValueList",
+      "layout": "grid",
+      "items": [
+        {
+          "label": "Category",
+          "value": "MongoDB"
+        },
+        {
+          "label": "Status",
+          "value": "Active"
+        },
+        {
+          "label": "Primary service",
+          "value": "analytics-service"
+        },
+        {
+          "label": "Database",
+          "value": "commerce"
+        }
+      ]
+    },
+    {
+      "type": "howItWorks",
+      "title": "How this page is rendered",
+      "items": [
+        "Case study metadata comes from src/data/caseStudies.js.",
+        "Declarative blocks are loaded from this JSON content file.",
+        "PageBlockRenderer maps each block type to a shared UI component.",
+        "Nested blocks are supported through subsection and contentCard.nestedBlocks."
+      ]
+    },
+    {
+      "type": "subsection",
+      "title": "3. Architecture",
+      "blocks": [
+        {
+          "type": "typography",
+          "html": "<p>The analytics service exposes REST endpoints backed by MongoDB aggregation pipelines. Domain services write operational data; analytics-service reads and transforms it for dashboards and APIs.</p>"
+        },
+        {
+          "type": "mermaidDiagram",
+          "title": "High-level system view",
+          "chart": "flowchart LR\n  orderService[order-service] --> commerceDB[(commerce)]\n  productService[product-service] --> commerceDB\n  paymentService[payment-service] --> commerceDB\n  reviewService[review-service] --> commerceDB\n  commerceDB --> analyticsService[analytics-service]\n  analyticsService --> apiGateway[API Gateway]\n  apiGateway --> client[Client Apps]"
+        }
+      ]
+    },
+    {
+      "type": "subsection",
+      "title": "6. Implemented analytics APIs",
+      "blocks": [
+        {
+          "type": "basicTable",
+          "title": "Pipeline endpoints",
+          "headers": [
+            "Endpoint",
+            "Stages",
+            "Purpose"
+          ],
+          "rows": [
+            [
+              "GET /api/analytics/orders/enriched",
+              "$match → $lookup → $project",
+              "Enriched orders"
+            ],
+            [
+              "GET /api/analytics/products/ratings",
+              "$lookup → $unwind → $group",
+              "Product rating summary"
+            ],
+            [
+              "GET /api/analytics/payments/revenue",
+              "$match → $group",
+              "Revenue by status"
+            ],
+            [
+              "POST /api/analytics/pipeline/execute",
+              "native stages JSON",
+              "Raw pipeline executor"
+            ]
+          ]
+        },
+        {
+          "type": "codeSnippet",
+          "filename": "enriched-orders.pipeline.json",
+          "language": "json",
+          "code": "[\n  { \"$match\": { \"status\": \"COMPLETED\" } },\n  { \"$lookup\": { \"from\": \"products\", \"localField\": \"productId\", \"foreignField\": \"_id\", \"as\": \"product\" } },\n  { \"$unwind\": \"$product\" },\n  { \"$project\": { \"orderId\": 1, \"productName\": \"$product.name\", \"amount\": 1 } }\n]"
+        }
+      ]
+    },
+    {
+      "type": "contentCard",
+      "subheading": "7. Raw pipeline executor",
+      "paragraphs": [
+        "<p>POST <code>/api/analytics/pipeline/execute</code> accepts native stage JSON so engineers can test pipelines from Compass or mongosh before promoting them to typed endpoints.</p>"
+      ],
+      "nestedBlocks": [
+        {
+          "type": "infoAlert",
+          "title": "Guardrails",
+          "content": "Collection allow-listing, stage validation, and execution timeouts protect the cluster from unsafe ad-hoc pipelines."
+        }
+      ]
+    },
+    {
+      "type": "statsGrid",
+      "columns": 3,
+      "stats": [
+        {
+          "id": "services",
+          "label": "Microservices",
+          "value": "5",
+          "color": "primary"
+        },
+        {
+          "id": "collections",
+          "label": "Collections",
+          "value": "4",
+          "color": "secondary"
+        },
+        {
+          "id": "endpoints",
+          "label": "Analytics APIs",
+          "value": "8+",
+          "color": "success"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+export {
+  COMPONENTS_SHOWCASE_CONTENT_PATH,
+  COMPONENTS_SHOWCASE_SECTIONS,
+  SHOWCASE_GROUPS,
+} from '../components/componentsCatalog';

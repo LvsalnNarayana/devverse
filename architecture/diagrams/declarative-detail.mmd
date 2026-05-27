@@ -1,0 +1,19 @@
+sequenceDiagram
+  participant User
+  participant Detail as CaseStudyDetail / ReferenceDetail
+  participant Registry as caseStudyRegistry / referenceRegistry
+  participant ContentHook as usePageContent
+  participant Public as public/configs/*.json
+  participant Blocks as PageBlockRenderer
+  participant Md as usePageStructureMarkdown
+
+  User->>Detail: /case-studies/:id or /references/:id
+  Detail->>Registry: getById(id)
+  Registry-->>Detail: metadata + content path + pageStructure path
+  Detail->>ContentHook: contentPath
+  ContentHook->>Public: fetch /configs/...
+  Public-->>ContentHook: blocks JSON
+  ContentHook-->>Blocks: parsed blocks
+  Detail->>Md: pageStructure path
+  Md-->>Detail: markdown outline (bundled .md)
+  Blocks-->>User: rendered article UI

@@ -1,0 +1,77 @@
+{
+  "id": "array",
+  "header": {
+    "backTo": "/dsa",
+    "overline": "Data Structures · Easy",
+    "title": "Array",
+    "description": "An array stores elements in contiguous memory, giving O(1) index access and update. It is the single most used data structure in competitive programming and system design — mastering it unlocks sliding window, two-pointer, and prefix-sum patterns."
+  },
+  "howItWorks": {
+    "title": "How arrays work",
+    "items": [
+      "Memory is laid out contiguously: element i lives at base_address + i × element_size, so any index is a single arithmetic jump — O(1).",
+      "Reading or writing by index is always constant time regardless of array length.",
+      "Appending to the end (push) is O(1) amortized: the buffer doubles when full, so the average cost across n appends is still O(1).",
+      "Inserting or deleting in the middle requires shifting every element after that point, making it O(n) in the worst case.",
+      "Searching for a value without an index requires a full linear scan — O(n)."
+    ]
+  },
+  "visualization": {
+    "id": "array",
+    "kind": "array-boxes",
+    "defaults": {
+      "initialArray": [
+        10,
+        20,
+        30,
+        40
+      ]
+    }
+  },
+  "code": {
+    "title": "Array operations",
+    "files": [
+      {
+        "filename": "array.js",
+        "language": "javascript",
+        "code": "// ─── Arrays in JavaScript ───────────────────────────────────────────────────\n//\n// JavaScript arrays are dynamic — they resize automatically and can hold\n// mixed types. Under the hood, V8 uses a contiguous block for uniform\n// integer/float arrays (fast path) and falls back to a hash-map for\n// mixed/sparse arrays (slow path). Stick to one type for best performance.\n\nconst arr = [10, 20, 30, 40];\n\n// ── O(1) — Read by index ─────────────────────────────────────────────────\n// The runtime computes: base_address + index * element_size\n// One memory read, regardless of array length.\nconst x = arr[2];          // x = 30\nconsole.log(x);            // 30\n\n// ── O(1) — Update by index ───────────────────────────────────────────────\n// Same address arithmetic as read, then a single write.\narr[1] = 25;               // [10, 25, 30, 40]\n\n// ── O(1) amortized — Push (append to end) ────────────────────────────────\n// When the internal buffer has room, this is a single write.\n// When the buffer is full, JS allocates ~2× space and copies (O(n)),\n// but that happens so rarely the average cost stays O(1).\narr.push(50);              // [10, 25, 30, 40, 50]\n\n// ── O(1) amortized — Pop (remove from end) ───────────────────────────────\n// Decrements the length; no elements need to move.\nconst last = arr.pop();    // last = 50, arr = [10, 25, 30, 40]\n\n// ── O(n) — Insert at arbitrary index ─────────────────────────────────────\n// splice() shifts every element after the insertion point one slot right.\n// Worst case: insert at index 0 → all n elements move.\narr.splice(1, 0, 15);      // [10, 15, 25, 30, 40]  (inserted 15 at index 1)\n\n// ── O(n) — Delete at arbitrary index ─────────────────────────────────────\n// splice() shifts every element after the deletion point one slot left.\narr.splice(2, 1);          // [10, 15, 30, 40]  (removed 25 at index 2)\n\n// ── O(n) — Linear search ─────────────────────────────────────────────────\n// indexOf scans left-to-right until it finds the value (or hits the end).\n// Best case O(1) (first element), worst case O(n) (last or absent).\nconst idx = arr.indexOf(30); // 2\n\n// ── Practical patterns ───────────────────────────────────────────────────\n\n// Two-pointer technique — O(n), O(1) space\nfunction twoSum(nums, target) {\n  let left = 0, right = nums.length - 1;\n  while (left < right) {\n    const sum = nums[left] + nums[right];\n    if (sum === target) return [left, right];\n    sum < target ? left++ : right--;\n  }\n  return [];\n}\n\n// Sliding window — O(n), O(1) space\nfunction maxSubarraySum(nums, k) {\n  let windowSum = nums.slice(0, k).reduce((a, b) => a + b, 0);\n  let max = windowSum;\n  for (let i = k; i < nums.length; i++) {\n    windowSum += nums[i] - nums[i - k];\n    max = Math.max(max, windowSum);\n  }\n  return max;\n}\n\n// Prefix sums — O(n) build, O(1) range queries\nfunction buildPrefix(nums) {\n  const prefix = [0];\n  for (const n of nums) prefix.push(prefix.at(-1) + n);\n  return prefix;\n}\n// Range sum [l, r] in O(1) after prefix is built:\n// rangeSum = prefix[r + 1] - prefix[l]\n"
+      },
+      {
+        "filename": "array.py",
+        "language": "python",
+        "code": "# ─── Arrays (lists) in Python ───────────────────────────────────────────────\n#\n# Python's list is a dynamic array backed by a C array of object pointers.\n# It over-allocates on growth to keep amortized O(1) for append.\n# Use array.array or numpy.ndarray when you need a true typed contiguous array.\n\narr = [10, 20, 30, 40]\n\n# ── O(1) — Read by index ─────────────────────────────────────────────────\nx = arr[2]          # 30\ny = arr[-1]         # 40  (negative indexing wraps from the end)\n\n# ── O(1) — Update by index ───────────────────────────────────────────────\narr[1] = 25         # [10, 25, 30, 40]\n\n# ── O(1) amortized — Append to end ───────────────────────────────────────\narr.append(50)      # [10, 25, 30, 40, 50]\n\n# ── O(1) amortized — Remove from end ─────────────────────────────────────\nlast = arr.pop()    # last = 50, arr = [10, 25, 30, 40]\n\n# ── O(n) — Insert at arbitrary index ─────────────────────────────────────\n# Every element from index onward is shifted one slot to the right in C,\n# then the new object pointer is written. Fast in practice (C loop),\n# but still linear in the number of elements shifted.\narr.insert(1, 15)   # [10, 15, 25, 30, 40]\n\n# ── O(n) — Delete at arbitrary index ─────────────────────────────────────\narr.pop(2)          # removes index 2 (value 25) → [10, 15, 30, 40]\n# del arr[2] is equivalent and slightly faster (no return value overhead)\n\n# ── O(n) — Linear search ─────────────────────────────────────────────────\nidx = arr.index(30) # 2  (raises ValueError if not found)\nfound = 30 in arr   # True  (uses __contains__, same O(n) scan)\n\n# ── Slicing — O(k) where k = slice length ────────────────────────────────\n# Creates a shallow copy of the sub-range. Does NOT modify the original.\nsub = arr[1:3]      # [15, 30]\nrev = arr[::-1]     # [40, 30, 15, 10]  (reversed copy)\n\n# ── List comprehensions — concise O(n) transforms ────────────────────────\ndoubled = [v * 2 for v in arr]          # [20, 30, 60, 80]\nevens   = [v for v in arr if v % 2 == 0] # [10, 30, 40]\n\n# ── Practical patterns ───────────────────────────────────────────────────\n\n# Two-pointer — O(n), O(1) space\ndef two_sum_sorted(nums, target):\n    left, right = 0, len(nums) - 1\n    while left < right:\n        s = nums[left] + nums[right]\n        if s == target:\n            return left, right\n        elif s < target:\n            left += 1\n        else:\n            right -= 1\n    return None\n\n# Sliding window — O(n), O(1) space\ndef max_subarray_sum(nums, k):\n    window = sum(nums[:k])\n    best = window\n    for i in range(k, len(nums)):\n        window += nums[i] - nums[i - k]\n        best = max(best, window)\n    return best\n\n# Prefix sums — O(n) build, O(1) range queries\ndef build_prefix(nums):\n    prefix = [0] * (len(nums) + 1)\n    for i, v in enumerate(nums):\n        prefix[i + 1] = prefix[i] + v\n    return prefix\n# range_sum(l, r) = prefix[r + 1] - prefix[l]\n"
+      },
+      {
+        "filename": "ArrayOps.java",
+        "language": "java",
+        "code": "// ─── Arrays in Java ──────────────────────────────────────────────────────────\n//\n// Java has two array flavours:\n//   int[] / T[]      — fixed-size, allocated once, O(1) access, no resize.\n//   ArrayList<T>     — dynamic wrapper around Object[], auto-resizes (×1.5).\n//\n// Prefer int[] when size is known upfront; ArrayList when you need add/remove.\n\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class ArrayOps {\n\n    public static void main(String[] args) {\n\n        // ── Fixed-size primitive array ────────────────────────────────────\n        int[] arr = {10, 20, 30, 40};\n\n        // O(1) — Read by index\n        int x = arr[2];          // 30\n\n        // O(1) — Update by index\n        arr[1] = 25;             // [10, 25, 30, 40]\n\n        // O(n) — Copy to a larger array (manual \"insert\")\n        // Java arrays cannot resize; you must allocate a new array.\n        int insertAt = 1, insertVal = 15;\n        int[] larger = new int[arr.length + 1];\n        System.arraycopy(arr, 0, larger, 0, insertAt);\n        larger[insertAt] = insertVal;\n        System.arraycopy(arr, insertAt, larger, insertAt + 1, arr.length - insertAt);\n        // larger = [10, 15, 25, 30, 40]\n\n        // ── ArrayList — dynamic, resizable ───────────────────────────────\n        ArrayList<Integer> list = new ArrayList<>(List.of(10, 20, 30, 40));\n\n        // O(1) — Read by index\n        int val = list.get(2);          // 30\n\n        // O(1) — Update by index\n        list.set(1, 25);                // [10, 25, 30, 40]\n\n        // O(1) amortized — Append to end\n        // When internal array is full, ArrayList grows to 1.5× capacity,\n        // copies all elements, then writes. Rare, so average stays O(1).\n        list.add(50);                   // [10, 25, 30, 40, 50]\n\n        // O(1) amortized — Remove from end\n        list.remove(list.size() - 1);  // [10, 25, 30, 40]\n\n        // O(n) — Insert at arbitrary index (shifts elements right)\n        list.add(1, 15);               // [10, 15, 25, 30, 40]\n\n        // O(n) — Delete at arbitrary index (shifts elements left)\n        list.remove(2);                // [10, 15, 30, 40]\n\n        // O(n) — Linear search\n        int idx = list.indexOf(30);    // 2\n\n        // ── Arrays utility class ──────────────────────────────────────────\n        int[] nums = {4, 2, 7, 1, 9};\n        Arrays.sort(nums);             // O(n log n) — [1, 2, 4, 7, 9]\n        int pos = Arrays.binarySearch(nums, 7); // O(log n) — requires sorted\n        int[] copy = Arrays.copyOfRange(nums, 1, 4); // O(k) — [2, 4, 7]\n    }\n\n    // ── Two-pointer — O(n), O(1) space ───────────────────────────────────\n    static int[] twoSum(int[] nums, int target) {\n        int left = 0, right = nums.length - 1;\n        while (left < right) {\n            int sum = nums[left] + nums[right];\n            if (sum == target)  return new int[]{left, right};\n            else if (sum < target) left++;\n            else                   right--;\n        }\n        return new int[]{};\n    }\n\n    // ── Prefix sums — O(n) build, O(1) range query ───────────────────────\n    static int[] buildPrefix(int[] nums) {\n        int[] prefix = new int[nums.length + 1];\n        for (int i = 0; i < nums.length; i++)\n            prefix[i + 1] = prefix[i] + nums[i];\n        return prefix;\n    }\n    // rangeSum(l, r) = prefix[r + 1] - prefix[l]\n}\n"
+      },
+      {
+        "filename": "array.cpp",
+        "language": "cpp",
+        "code": "// ─── Arrays in C++ ───────────────────────────────────────────────────────────\n//\n// C++ offers three layers:\n//   int arr[N]         — stack-allocated, compile-time size, raw speed.\n//   std::array<T, N>   — zero-overhead wrapper, same fixed size, safer API.\n//   std::vector<T>     — heap-allocated dynamic array; the everyday choice.\n//\n// Prefer vector<T> unless you have a size-at-compile-time constraint.\n\n#include <algorithm>\n#include <iostream>\n#include <numeric>\n#include <vector>\n\nint main() {\n\n    // ── std::vector — dynamic array ───────────────────────────────────────\n    std::vector<int> arr = {10, 20, 30, 40};\n\n    // O(1) — Read / update by index (no bounds check)\n    int x   = arr[2];      // 30\n    arr[1]  = 25;          // [10, 25, 30, 40]\n\n    // O(1) — Read / update with bounds checking (throws std::out_of_range)\n    int y   = arr.at(2);   // 30\n\n    // O(1) amortized — Append to end\n    // vector doubles its capacity when full; push_back copies/moves one element.\n    arr.push_back(50);     // [10, 25, 30, 40, 50]\n\n    // O(1) — Remove from end (no reallocation, just decrements size)\n    arr.pop_back();        // [10, 25, 30, 40]\n\n    // O(n) — Insert at arbitrary position\n    // iterator arithmetic: begin() + 1 points to index 1\n    arr.insert(arr.begin() + 1, 15);   // [10, 15, 25, 30, 40]\n\n    // O(n) — Erase at arbitrary position\n    arr.erase(arr.begin() + 2);        // [10, 15, 30, 40]\n\n    // O(n) — Linear search (returns iterator, not index)\n    auto it = std::find(arr.begin(), arr.end(), 30);\n    if (it != arr.end()) {\n        int idx = std::distance(arr.begin(), it); // 2\n    }\n\n    // ── Reserve capacity upfront to avoid reallocations ──────────────────\n    std::vector<int> big;\n    big.reserve(1000);          // allocates space, size stays 0\n    for (int i = 0; i < 1000; i++) big.push_back(i); // zero reallocations\n\n    // ── Algorithms (work on any contiguous range) ─────────────────────────\n    std::sort(arr.begin(), arr.end());                  // O(n log n)\n    bool found = std::binary_search(arr.begin(), arr.end(), 30); // O(log n)\n    int  total = std::accumulate(arr.begin(), arr.end(), 0);     // O(n)\n\n    // ── Two-pointer — O(n), O(1) space ───────────────────────────────────\n    auto twoSum = [](std::vector<int>& nums, int target) {\n        int l = 0, r = (int)nums.size() - 1;\n        while (l < r) {\n            int s = nums[l] + nums[r];\n            if      (s == target) return std::make_pair(l, r);\n            else if (s < target)  l++;\n            else                  r--;\n        }\n        return std::make_pair(-1, -1);\n    };\n\n    // ── Prefix sums — O(n) build, O(1) range queries ─────────────────────\n    std::vector<int> prefix(arr.size() + 1, 0);\n    for (int i = 0; i < (int)arr.size(); i++)\n        prefix[i + 1] = prefix[i] + arr[i];\n    // rangeSum(l, r) = prefix[r + 1] - prefix[l]\n\n    return 0;\n}\n"
+      }
+    ]
+  },
+  "footerAlerts": [
+    {
+      "severity": "success",
+      "title": "When arrays shine",
+      "items": [
+        "Random access by index — O(1) makes arrays perfect for lookup tables and matrices.",
+        "Sliding window / two-pointer — fixed-size window slides in O(n) with no extra allocations.",
+        "Prefix / suffix preprocessing — build in O(n), answer range queries in O(1).",
+        "Cache-friendly iteration — contiguous memory means each cache line loads several elements at once."
+      ]
+    },
+    {
+      "severity": "warning",
+      "title": "When to consider alternatives",
+      "items": [
+        "Frequent insert/delete in the middle → use a linked list or deque.",
+        "Frequent search without index → use a hash set/map for O(1) lookup.",
+        "Unknown size with many inserts at the front → use a deque."
+      ]
+    }
+  ]
+}

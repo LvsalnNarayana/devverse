@@ -1,0 +1,348 @@
+{
+  "_meta": {
+    "description": "Declarative listing-page config consumed by ModuleListingLayout.",
+    "flow": [
+      "Page wrapper selects one module key (e.g. dsa, caseStudies).",
+      "Page passes dataset, tags, and optionsBySource arrays.",
+      "ModuleListingLayout applies filters/sorts/pagination based on this JSON."
+    ],
+    "importantKeys": {
+      "filters.selects[].optionsSource": "Lookup key in optionsBySource passed by page.",
+      "filters.selects[].visibleWhen": "Conditional visibility based on another select value.",
+      "filters.selects[].resetOnHide": "Reset hidden select back to All when it becomes invisible.",
+      "card.linkTemplate": "Interpolates item fields, e.g. /case-studies/:id"
+    }
+  },
+  "dsa": {
+    "header": {
+      "backTo": "/",
+      "title": "DSA Visualizer",
+      "description": "Data structures, graph algorithms, sorting, searching, dynamic programming, classic problems, and techniques - filter by category, difficulty, tags, or structure type."
+    },
+    "filters": {
+      "searchPlaceholder": "Search by title, tag, category, difficulty, or key point...",
+      "searchKeys": [
+        "title",
+        "description",
+        "tags",
+        "category",
+        "keyPoints",
+        "id"
+      ],
+      "selects": [
+        {
+          "key": "category",
+          "label": "Category",
+          "optionsSource": "dsaCategories"
+        },
+        {
+          "key": "structureKind",
+          "label": "Structure type",
+          "optionsSource": "dsaStructureKinds",
+          "visibleWhen": {
+            "key": "category",
+            "in": [
+              "All",
+              "Data Structures"
+            ]
+          },
+          "resetOnHide": true
+        },
+        {
+          "key": "difficulty",
+          "label": "Difficulty",
+          "optionsSource": "dsaDifficulties"
+        },
+        {
+          "key": "interviewFrequency",
+          "label": "Interview frequency",
+          "optionsSource": "dsaFrequencies"
+        }
+      ],
+      "defaultSelectValues": {
+        "category": "All",
+        "structureKind": "All",
+        "difficulty": "All",
+        "interviewFrequency": "All"
+      },
+      "sorts": [
+        {
+          "value": "category",
+          "label": "Category",
+          "key": "categoryRank",
+          "direction": "asc"
+        },
+        {
+          "value": "title",
+          "label": "Title A-Z",
+          "key": "title",
+          "direction": "asc"
+        },
+        {
+          "value": "difficulty",
+          "label": "Difficulty",
+          "key": "difficultyRank",
+          "direction": "asc"
+        },
+        {
+          "value": "frequency",
+          "label": "Interview frequency",
+          "key": "frequencyRank",
+          "direction": "desc"
+        }
+      ],
+      "defaultSort": "category"
+    },
+    "card": {
+      "type": "topic",
+      "descriptionLines": 3,
+      "minHeight": 280
+    },
+    "pagination": {
+      "pageSize": 9
+    },
+    "emptyMessage": "No topics match your filters."
+  },
+  "caseStudies": {
+    "header": {
+      "backTo": "/",
+      "title": "Backend Engineering Case Studies",
+      "description": "Production-grade projects covering Kafka, databases, caching, microservices, and AI integration."
+    },
+    "filters": {
+      "searchPlaceholder": "Search projects by title, description, or tags...",
+      "searchKeys": [
+        "title",
+        "description",
+        "tags",
+        "category"
+      ],
+      "selects": [
+        {
+          "key": "category",
+          "label": "Category",
+          "optionsSource": "caseStudyCategories"
+        }
+      ],
+      "sorts": [
+        {
+          "value": "title",
+          "label": "Title A-Z",
+          "key": "title",
+          "direction": "asc"
+        },
+        {
+          "value": "category",
+          "label": "Category",
+          "key": "category",
+          "direction": "asc"
+        }
+      ],
+      "defaultSort": "title"
+    },
+    "card": {
+      "type": "Blog",
+      "linkTemplate": "/case-studies/:id",
+      "minHeight": 280
+    },
+    "pagination": {
+      "pageSize": 9
+    },
+    "emptyMessage": "No projects match your filters."
+  },
+  "references": {
+    "header": {
+      "backTo": "/",
+      "title": "Reference Library",
+      "description": "Quick-reference docs for messaging, databases, Spring Boot, architecture, DevOps, and more."
+    },
+    "filters": {
+      "searchPlaceholder": "Search references by title, description, or tags...",
+      "searchKeys": [
+        "title",
+        "description",
+        "tags",
+        "type",
+        "level",
+        "id"
+      ],
+      "selects": [
+        {
+          "key": "type",
+          "label": "Type",
+          "optionsSource": "referenceTypes"
+        },
+        {
+          "key": "level",
+          "label": "Level",
+          "optionsSource": "referenceLevels"
+        }
+      ],
+      "defaultSelectValues": {
+        "type": "All",
+        "level": "All"
+      },
+      "sorts": [
+        {
+          "value": "title",
+          "label": "Title A-Z",
+          "key": "title",
+          "direction": "asc"
+        },
+        {
+          "value": "type",
+          "label": "Type",
+          "key": "type",
+          "direction": "asc"
+        }
+      ],
+      "defaultSort": "title"
+    },
+    "card": {
+      "type": "Blog",
+      "linkTemplate": "/references/:id",
+      "minHeight": 280
+    },
+    "pagination": {
+      "pageSize": 9
+    },
+    "emptyMessage": "No references match your filters."
+  },
+  "prebuiltModules": {
+    "header": {
+      "backTo": "/",
+      "title": "Prebuilt Microservice Modules",
+      "description": "Ready-to-compose Spring Boot services — e-commerce, ride-sharing, and social platform building blocks with GitHub repos and service breakdowns."
+    },
+    "filters": {
+      "searchPlaceholder": "Search modules by title, description, tags, or category...",
+      "searchKeys": ["title", "description", "tags", "category", "id"],
+      "selects": [
+        {
+          "key": "category",
+          "label": "Category",
+          "optionsSource": "prebuiltModuleCategories"
+        }
+      ],
+      "defaultSelectValues": {
+        "category": "All"
+      },
+      "sorts": [
+        {
+          "value": "title",
+          "label": "Title A-Z",
+          "key": "title",
+          "direction": "asc"
+        },
+        {
+          "value": "category",
+          "label": "Category",
+          "key": "category",
+          "direction": "asc"
+        }
+      ],
+      "defaultSort": "title"
+    },
+    "card": {
+      "type": "Module",
+      "linkTemplate": "/modules/:id",
+      "descriptionLines": 3,
+      "minHeight": 280
+    },
+    "pagination": {
+      "pageSize": 9
+    },
+    "emptyMessage": "No prebuilt modules match your filters."
+  },
+  "projects": {
+    "header": {
+      "backTo": "/",
+      "title": "Full-Stack Projects",
+      "description": "Clone-style builds — collaborative docs, video meetings, social feeds, and calendars with architecture write-ups and source links."
+    },
+    "filters": {
+      "searchPlaceholder": "Search projects by title, description, tags, or category...",
+      "searchKeys": ["title", "description", "tags", "category", "id"],
+      "selects": [
+        {
+          "key": "category",
+          "label": "Category",
+          "optionsSource": "projectCategories"
+        }
+      ],
+      "defaultSelectValues": {
+        "category": "All"
+      },
+      "sorts": [
+        {
+          "value": "title",
+          "label": "Title A-Z",
+          "key": "title",
+          "direction": "asc"
+        },
+        {
+          "value": "category",
+          "label": "Category",
+          "key": "category",
+          "direction": "asc"
+        }
+      ],
+      "defaultSort": "title"
+    },
+    "card": {
+      "type": "Project",
+      "linkTemplate": "/projects/:id",
+      "descriptionLines": 3,
+      "minHeight": 280
+    },
+    "pagination": {
+      "pageSize": 9
+    },
+    "emptyMessage": "No projects match your filters."
+  },
+  "developerTools": {
+    "header": {
+      "backTo": "/",
+      "title": "Developer Tools",
+      "description": "Hand-picked external utilities — formatters, converters, testers, and generators. Opens in a new tab."
+    },
+    "filters": {
+      "searchPlaceholder": "Search tools by title, description, tags, or category...",
+      "searchKeys": ["title", "description", "tags", "category", "id"],
+      "selects": [
+        {
+          "key": "category",
+          "label": "Category",
+          "optionsSource": "developerToolCategories"
+        }
+      ],
+      "defaultSelectValues": {
+        "category": "All"
+      },
+      "sorts": [
+        {
+          "value": "title",
+          "label": "Title A-Z",
+          "key": "title",
+          "direction": "asc"
+        },
+        {
+          "value": "category",
+          "label": "Category",
+          "key": "category",
+          "direction": "asc"
+        }
+      ],
+      "defaultSort": "title"
+    },
+    "card": {
+      "type": "Tool",
+      "descriptionLines": 2,
+      "minHeight": 240
+    },
+    "pagination": {
+      "pageSize": 12
+    },
+    "emptyMessage": "No tools match your filters."
+  }
+}

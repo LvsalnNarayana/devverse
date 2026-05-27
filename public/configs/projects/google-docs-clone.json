@@ -1,0 +1,77 @@
+{
+  "page": "/projects/google-docs-clone",
+  "section": "Projects / Productivity",
+  "module": "projects",
+  "projectId": "google-docs-clone",
+  "pageStructure": "/pageStructures/projects/GoogleDocsClone.md",
+  "blocks": [
+    {
+      "type": "sectionHeader",
+      "eyebrow": "Project",
+      "title": "Google Docs Clone",
+      "description": "A collaborative document editor demonstrating real-time sync, permissions, and scalable document storage.",
+      "divider": true
+    },
+    {
+      "type": "keyValueList",
+      "layout": "grid",
+      "items": [
+        { "label": "Category", "value": "Productivity" },
+        { "label": "Status", "value": "Active" },
+        { "label": "Stack", "value": "React · Node.js · WebSocket · PostgreSQL" },
+        {
+          "label": "Repository",
+          "value": "github.com/example/google-docs-clone"
+        }
+      ]
+    },
+    {
+      "type": "subsection",
+      "title": "What this project is",
+      "blocks": [
+        {
+          "type": "typography",
+          "html": "<p>End-to-end clone focused on <strong>multiplayer editing</strong>: multiple users see each other's cursors, edits merge without conflicts (CRDT/OT layer), and documents persist with version history. Suitable as a portfolio piece or starter for team docs products.</p>"
+        }
+      ]
+    },
+    {
+      "type": "subsection",
+      "title": "Architecture",
+      "blocks": [
+        {
+          "type": "mermaidDiagram",
+          "title": "High-level system view",
+          "chart": "flowchart TB\n  subgraph clients [Clients]\n    WebApp[React SPA]\n  end\n  subgraph gateway [Edge]\n    API[API Gateway]\n    WS[WebSocket Gateway]\n  end\n  subgraph services [Services]\n    Doc[document-service]\n    Auth[auth-service]\n    Collab[collaboration-service]\n  end\n  subgraph data [Data]\n    PG[(PostgreSQL)]\n    Redis[(Redis presence)]\n  end\n  WebApp --> API\n  WebApp --> WS\n  API --> Auth\n  API --> Doc\n  WS --> Collab\n  Doc --> PG\n  Collab --> Redis\n  Collab --> Doc"
+        },
+        {
+          "type": "list",
+          "variant": "ordered",
+          "items": [
+            "Clients load document snapshots via REST and subscribe to live ops over WebSockets.",
+            "collaboration-service broadcasts operational transforms or CRDT updates to room members.",
+            "document-service persists snapshots and append-only revision log for recovery.",
+            "auth-service issues JWTs with document-level ACL claims (viewer, commenter, editor)."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "subsection",
+      "title": "Key features",
+      "blocks": [
+        {
+          "type": "basicTable",
+          "title": "Feature breakdown",
+          "headers": ["Area", "Implementation notes"],
+          "rows": [
+            ["Real-time sync", "WebSocket rooms per documentId; heartbeat and reconnect"],
+            ["Rich text", "Slate/ProseMirror-style editor with shared cursor overlays"],
+            ["Sharing", "Invite links with role; optional public read-only URL"],
+            ["History", "Named versions + diff preview between revisions"]
+          ]
+        }
+      ]
+    }
+  ]
+}
