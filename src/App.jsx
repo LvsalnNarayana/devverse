@@ -6,6 +6,7 @@ import { Route, Routes } from 'react-router';
 
 // Relative
 import ScrollToTop from './components/ScrollToTop';
+import PageTitleManager from './components/PageTitleManager';
 import MainLayout from './layouts/MainLayout';
 import CaseStudyDetail from './pages/CaseStudyDetail';
 import CaseStudies from './pages/CaseStudies';
@@ -26,6 +27,7 @@ function App() {
   return (
     <>
       <ScrollToTop />
+      <PageTitleManager />
       <Routes>
         <Route element={<MainLayout />}>
           <Route index element={<Home />} />

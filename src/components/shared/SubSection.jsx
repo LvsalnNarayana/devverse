@@ -1,12 +1,18 @@
 import React from 'react';
 
-import { Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 
-export default function SubSection({ title, children }) {
+export default function SubSection({ id, title, children }) {
   return (
-    <Stack sx={{ gap: 2 }}>
-      {title ? <Typography variant="h6">{title}</Typography> : null}
-      {children}
-    </Stack>
+    <Box
+      id={id}
+      component="section"
+      sx={{ scrollMarginTop: 96 }}
+    >
+      <Stack sx={{ gap: 2 }}>
+        {title ? <Typography variant="h6">{title}</Typography> : null}
+        {children}
+      </Stack>
+    </Box>
   );
 }

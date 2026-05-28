@@ -32,7 +32,7 @@ export default function DSADetail() {
 
   if (loading) {
     return (
-      <Stack alignItems="center" sx={{ py: 8 }}>
+      <Stack sx={{ alignItems: 'center', py: 8 }}>
         <CircularProgress />
       </Stack>
     );

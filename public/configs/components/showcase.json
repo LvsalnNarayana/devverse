@@ -589,12 +589,12 @@
               "rows": [
                 {
                   "id": 1,
-                  "endpoint": "/api/orders",
+                  "endpoint": "<code>/api/orders</code>",
                   "method": "GET"
                 },
                 {
                   "id": 2,
-                  "endpoint": "/api/pipeline",
+                  "endpoint": "<code>/api/pipeline</code>",
                   "method": "POST"
                 }
               ]

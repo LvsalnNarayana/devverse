@@ -3,9 +3,10 @@ import { useParams } from 'react-router';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Alert, Box, Button, Chip, Divider, Stack, Typography } from '@mui/material';
 import ScrollToTopFab from '../components/ScrollToTopFab';
-import PageContent from '../components/renderer/PageContent';
+import ReferencePageContent from '../components/references/ReferencePageContent';
 import { getReferenceById } from '../data/registries/referenceRegistry';
 import { usePageStructureMarkdown } from '../hooks/usePageStructureMarkdown';
+import { ContentCard, Tag } from '../components/shared';
 
 export default function ReferenceDetail() {
   const { id } = useParams();
@@ -52,19 +53,32 @@ export default function ReferenceDetail() {
         <Typography variant="h4">{reference.title}</Typography>
         <Typography color="text.secondary">{reference.description}</Typography>
         <Stack sx={{ flexDirection: 'row', gap: 1, flexWrap: 'wrap' }}>
-          <Chip size="small" label={`Type: ${reference.type}`} />
-          <Chip size="small" variant="outlined" label={`Level: ${reference.level}`} />
+          <Tag variant="outlined" label={`Type: ${reference.type}`} size="sm" />
+          <Tag variant="outlined" label={`Level: ${reference.level}`} size="sm" />
           {reference.tags?.map((tag) => (
-            <Chip key={tag} size="small" variant="outlined" label={tag} />
+            <Tag key={tag} label={tag} size="sm" />
           ))}
         </Stack>
       </Stack>
 
       <Divider />
 
-      <PageContent contentPath={reference.content} />
+      {reference?.content ? (
+        <ReferencePageContent contentPath={reference.content} />
+      ) : (
+        <ContentCard variant="tinted">
+          <Typography
+            variant="subtitle1"
+            sx={{
+              textAlign: 'center',
+            }}
+          >
+            Page Content not available yet
+          </Typography>
+        </ContentCard>
+      )}
 
-      {reference.pageStructure ? (
+      {!reference?.content && reference?.pageStructure ? (
         <Stack sx={{ gap: 1, mt: 2 }}>
           <Typography variant="subtitle2" color="text.secondary">
             Page structure outline

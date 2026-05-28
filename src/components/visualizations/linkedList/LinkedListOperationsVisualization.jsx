@@ -25,7 +25,7 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { Alert, StatCard } from '../../shared';
+import { Alert, BasicTable, StatCard } from '../../shared';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LIST TYPES
@@ -1067,61 +1067,8 @@ function AnimatedLinkedList({ nodes, mode, traceStep }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// COMPLEXITY TABLE
+// COMPLEXITY TABLE — uses BasicTable with row.highlight for active op
 // ─────────────────────────────────────────────────────────────────────────────
-function ComplexityTable({ activeOp }) {
-  return (
-    <Box
-      sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, overflow: 'hidden' }}
-    >
-      {ALL_OPS.map((op, i) => {
-        const isActive = activeOp === op.id;
-        return (
-          <Box
-            key={op.id}
-            sx={(theme) => ({
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 1.5,
-              py: 0.75,
-              borderBottom: i < ALL_OPS.length - 1 ? '1px solid' : 'none',
-              borderColor: 'divider',
-              bgcolor: isActive ? alpha(theme.palette.primary.main, 0.06) : 'transparent',
-              transition: 'background 0.3s',
-            })}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: isActive ? 'text.primary' : 'text.secondary',
-                fontWeight: isActive ? 600 : 400,
-              }}
-            >
-              {op.label}
-              {isActive && (
-                <Typography
-                  component="span"
-                  variant="caption"
-                  sx={{ ml: 1, color: 'text.disabled' }}
-                >
-                  — {op.note}
-                </Typography>
-              )}
-            </Typography>
-            <Chip
-              label={op.value}
-              size="small"
-              color={isActive ? op.color : 'default'}
-              variant={isActive ? 'filled' : 'outlined'}
-              sx={{ fontFamily: 'monospace', fontSize: 11, height: 20 }}
-            />
-          </Box>
-        );
-      })}
-    </Box>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OPERATION LOG
@@ -1620,8 +1567,32 @@ function ListPanel({ listType, defaults }) {
         />
       </Box>
 
-      {/* Complexity table */}
-      <ComplexityTable activeOp={activeOp} />
+      {/* Complexity table — BasicTable with row.highlight on active op */}
+      <BasicTable
+        columns={[
+          { key: 'label', label: 'Operation', width: 120 },
+          { key: 'value', label: 'Time', width: 130, mono: true },
+          { key: 'note', label: 'Why' },
+        ]}
+        rows={ALL_OPS.map((op) => {
+          const isActive = activeOp === op.id;
+          return {
+            id: op.id,
+            highlight: isActive,
+            label: op.label,
+            value: isActive
+              ? { value: op.value, tone: op.color === 'success' ? 'good' : 'worse' }
+              : op.value,
+            note: isActive ? { value: op.note, tone: 'highlight' } : op.note,
+          };
+        })}
+        dense
+        striped
+        hover={false}
+        tableVariant="comparison"
+        caption="Active operation is highlighted. Green = O(1), yellow = O(n)."
+        sx={{ mt: 0, mb: 0 }}
+      />
 
       {/* Op log */}
       <OperationLog entries={opLog} />

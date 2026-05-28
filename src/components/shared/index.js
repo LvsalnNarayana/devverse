@@ -10,6 +10,7 @@ export { default as DisplayCard } from './DisplayCard';
 export { default as EmptyState } from '../EmptyState';
 export { default as Heatmap } from './Heatmap';
 export { default as HtmlContent } from './HtmlContent';
+export { default as RichText } from './RichText';
 export { default as HowItWorksAlert } from './HowItWorksAlert';
 export { default as InfoAlert } from './InfoAlert';
 export { default as KeyValueList } from './KeyValueList';

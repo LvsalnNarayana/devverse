@@ -5,6 +5,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import { Box, Button, Stack, Typography } from '@mui/material';
+
+import RichText from './RichText';
 import { alpha } from '@mui/material/styles';
 
 const STEP_NUM_SIZE = 34;
@@ -148,9 +150,13 @@ export default function StepList({
                   {step.title ?? step.label}
                 </Typography>
                 {isActive && step.description ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    {step.description}
-                  </Typography>
+                  <RichText
+                    content={step.description}
+                    variant="body2"
+                    component="div"
+                    color="text.secondary"
+                    sx={{ mt: 0.5 }}
+                  />
                 ) : null}
               </Box>
             </Box>

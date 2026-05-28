@@ -37,6 +37,8 @@ import CarouselPlaygroundBlock from '../showcase/CarouselPlaygroundBlock';
 import FiltersDemoBlock from '../showcase/FiltersDemoBlock';
 import ShowcaseSection from '../showcase/ShowcaseSection';
 import { VariantGrid, VariantGroup } from '../showcase/VariantGroup';
+import { slugify } from '../../utils/slugify';
+import { RICH_HTML_SX } from '../../utils/richHtml';
 
 /**
  * Maps declarative `pageData` blocks to shared page primitives.
@@ -49,6 +51,17 @@ import { VariantGrid, VariantGroup } from '../showcase/VariantGroup';
  * showcaseSection | variantGroup | variantGrid | layout |
  * carouselPlayground | filtersDemo
  */
+
+/** @param {Record<string, unknown>} block */
+function resolveBlockAnchorId(block) {
+  if (typeof block.id === 'string' && block.id.trim()) {
+    return block.id.trim();
+  }
+  if (typeof block.title === 'string' && block.title.trim()) {
+    return slugify(block.title);
+  }
+  return undefined;
+}
 
 /** @param {Record<string, unknown>} block */
 function resolveListTag(block) {
@@ -161,7 +174,7 @@ function pushContentCardBody(block, parts, keyPrefix) {
       <Stack
         key={`${keyPrefix}-ul`}
         component={ListTag}
-        sx={{ gap: 1, pl: 2.5, m: 0, '& li + li': { mt: 0.75 } }}
+        sx={{ gap: 1, pl: 2.5, m: 0, ...RICH_HTML_SX, '& li + li': { mt: 0.75 } }}
       >
         {block.listItems.map((item, j) => (
           <Box
@@ -261,7 +274,7 @@ export function renderBlock(block, keySuffix) {
     }
     case 'subsection':
       return (
-        <SubSection key={k} title={block.title}>
+        <SubSection key={k} id={resolveBlockAnchorId(block)} title={block.title}>
           <Stack gap={2}>
             {renderBlocksList(block.blocks, `${keySuffix}-sub`)}
           </Stack>
@@ -359,7 +372,7 @@ export function renderBlock(block, keySuffix) {
         <Stack
           key={k}
           component={ListTag}
-          sx={{ gap: 1, pl: 2.5, m: 0, ...(block.sx ?? {}) }}
+          sx={{ gap: 1, pl: 2.5, m: 0, ...RICH_HTML_SX, ...(block.sx ?? {}) }}
         >
           {items.map((item, i) => (
             <Box
@@ -448,6 +461,7 @@ export function renderBlock(block, keySuffix) {
       return (
         <SectionHeader
           key={k}
+          id={resolveBlockAnchorId(block)}
           eyebrow={block.eyebrow}
           title={block.title}
           description={block.description}

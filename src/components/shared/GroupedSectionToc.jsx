@@ -93,7 +93,7 @@ export default function GroupedSectionToc({
 
   return (
     <Box component="nav" aria-label={ariaLabel} sx={{ pr: 1 }}>
-      <Stack
+      {/* <Stack
         sx={{
           gap: 1,
           flexDirection: 'column',
@@ -103,9 +103,6 @@ export default function GroupedSectionToc({
           mb: 1,
         }}
       >
-        <Typography variant="overline" color="text.secondary">
-          {heading}
-        </Typography>
         {orderedGroups.length > 1 ? (
           <Stack
             sx={{
@@ -137,7 +134,43 @@ export default function GroupedSectionToc({
           </Stack>
         ) : null}
       </Stack>
-      <Divider sx={{ my: 1 }} />
+      <Divider sx={{ my: 1 }} /> */}
+      {orderedGroups.length === 0 && items.length > 0 ? (
+        <List dense disablePadding>
+          {items.map((item) => (
+            <ListItemButton
+              key={item.id}
+              selected={current === item.id}
+              onClick={() => scrollTo(item.id)}
+              sx={{
+                py: 0.5,
+                borderRadius: 1,
+                mx: 0.5,
+                my: 0.5,
+                '&.Mui-selected': {
+                  bgcolor: 'action.selected',
+                  borderLeft: '2px solid',
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  '& .MuiListItemText-primary': {
+                    fontWeight: 700,
+                  },
+                },
+              }}
+            >
+              <ListItemText
+                primary={item.title}
+                slotProps={{
+                  primary: {
+                    variant: 'body2',
+                    fontWeight: current === item.id ? 600 : 500,
+                  },
+                }}
+              />
+            </ListItemButton>
+          ))}
+        </List>
+      ) : null}
       {orderedGroups.map((group) => {
         const groupedItems = items.filter((item) => item.group === group);
         if (!groupedItems.length) return null;

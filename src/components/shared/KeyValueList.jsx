@@ -2,6 +2,8 @@ import React from 'react';
 
 import { Box, Typography } from '@mui/material';
 
+import RichText from './RichText';
+
 export default function KeyValueList({
   items = [],
   monoValues = false,
@@ -26,12 +28,12 @@ export default function KeyValueList({
             <Typography variant="caption" color="text.secondary">
               {item.label ?? item.key}
             </Typography>
-            <Typography
+            <RichText
+              content={item.value}
               variant="body2"
+              component="div"
               sx={{ fontFamily: monoValues ? 'monospace' : 'inherit' }}
-            >
-              {item.value}
-            </Typography>
+            />
           </Box>
         ))}
       </Box>
@@ -45,12 +47,12 @@ export default function KeyValueList({
           <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
             {item.label ?? item.key}:
           </Typography>
-          <Typography
+          <RichText
+            content={item.value}
             variant="body2"
+            component="span"
             sx={{ fontFamily: monoValues ? 'monospace' : 'inherit' }}
-          >
-            {item.value}
-          </Typography>
+          />
         </Box>
       ))}
     </Box>

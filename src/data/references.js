@@ -8,26 +8,56 @@ const internal = (id) => `/references/${id}`;
 /** Full catalog before active filtering. */
 const referenceCatalog = [
   {
-    id: 'redis-basics',
-    title: 'Redis Basics',
+    id: 'redis-fundamentals',
+    title: 'Redis Fundamentals',
     description:
-      'Data structures, persistence (RDB/AOF), replication, Sentinel, Cluster, pub/sub, streams, Lua, eviction policies, and production operations.',
+      'Core concepts, data structures, commands, persistence, pub/sub, transactions, Lua scripting, and commands cheat sheet.',
     type: 'Docs',
     level: 'Intermediate',
-    tags: ['Redis', 'Caching', 'Databases', 'Backend'],
-    href: internal('redis-basics'),
-    active: false,
+    tags: ['Redis', 'Caching', 'Database', 'Backend'],
+    href: internal('redis-fundamentals'),
+    active: true,
+    pageStructure: '/pageStructures/references/redis/RedisFundamentals.md',
+    content: '',
+  },
+  {
+    id: 'redis-architecture',
+    title: 'Redis Architecture & Patterns',
+    description:
+      'Configuration, replication, Sentinel, Cluster, caching patterns, distributed patterns, performance optimization, and best practices.',
+    type: 'Docs',
+    level: 'Advanced',
+    tags: ['Redis', 'Distributed Systems', 'Caching', 'Backend'],
+    href: internal('redis-architecture'),
+    active: true,
+    pageStructure: '/pageStructures/references/redis/RedisArchitecture.md',
+    content: '',
   },
   {
     id: 'redis-spring-boot',
     title: 'Redis with Spring Boot',
     description:
-      'Spring Cache, RedisTemplate, @Cacheable, TTL, pub/sub, Redisson locks, Spring Session, and Lettuce cluster configuration.',
+      'RedisTemplate, Spring Cache, pub/sub, Redis Streams, Spring Session, Redisson distributed patterns, serialization, and testing.',
     type: 'Docs',
     level: 'Intermediate',
-    tags: ['Spring Boot', 'Redis', 'Caching', 'Java'],
+    tags: ['Redis', 'Spring Boot', 'Java', 'Backend'],
     href: internal('redis-spring-boot'),
-    active: false,
+    active: true,
+    pageStructure: '/pageStructures/references/redis/RedisSpringBoot.md',
+    content: '',
+  },
+  {
+    id: 'redis-deployment-monitoring',
+    title: 'Redis Deployment & Monitoring',
+    description:
+      'Security, monitoring, Prometheus and Grafana setup, deployment strategies, Docker, Kubernetes, backup, recovery, and troubleshooting.',
+    type: 'Docs',
+    level: 'Advanced',
+    tags: ['Redis', 'DevOps', 'Monitoring', 'Backend'],
+    href: internal('redis-deployment-monitoring'),
+    active: true,
+    pageStructure: '/pageStructures/references/redis/RedisDeploymentMonitoring.md',
+    content: '',
   },
   {
     id: 'postgresql-basics',
@@ -107,39 +137,108 @@ const referenceCatalog = [
     active: false,
   },
   {
-    id: 'rabbitmq-basics',
-    title: 'RabbitMQ Basics',
+    id: 'rabbitmq-fundamentals',
+    title: 'RabbitMQ Fundamentals',
     description:
-      'AMQP, exchanges, queues, bindings, acknowledgements, DLQ, quorum queues, and messaging patterns (work queues, pub/sub).',
+      'Core concepts, AMQP protocol, exchanges, queues, bindings, message lifecycle, dead letter exchanges, and CLI reference.',
     type: 'Docs',
     level: 'Intermediate',
-    tags: ['RabbitMQ', 'Messaging', 'AMQP', 'Backend'],
-    href: internal('rabbitmq-basics'),
-    active: false,
+    tags: ['RabbitMQ', 'Messaging', 'Event Driven', 'Backend'],
+    href: internal('rabbitmq-fundamentals'),
+    active: true,
+    pageStructure: '/pageStructures/references/RabbitmqFundamentals.md',
+    content: '',
+  },
+  {
+    id: 'rabbitmq-architecture',
+    title: 'RabbitMQ Architecture & Patterns',
+    description:
+      'Clustering, high availability, quorum queues, federation, messaging patterns, reliability guarantees, and performance optimization.',
+    type: 'Docs',
+    level: 'Advanced',
+    tags: ['RabbitMQ', 'Messaging', 'Distributed Systems', 'Backend'],
+    href: internal('rabbitmq-architecture'),
+    active: true,
+    pageStructure: '/pageStructures/references/RabbitmqArchitecture.md',
+    content: '',
   },
   {
     id: 'rabbitmq-spring-boot',
-    title: 'RabbitMQ with Spring Boot (JMS / AMQP)',
+    title: 'RabbitMQ with Spring Boot',
     description:
-      'Spring AMQP, RabbitTemplate, @RabbitListener, converters, retry, DLQ configuration, and idempotent consumers.',
+      'Spring AMQP, RabbitTemplate, message listeners, serialization, error handling, publisher confirms, architecture patterns, and testing.',
     type: 'Docs',
     level: 'Intermediate',
-    tags: ['Spring Boot', 'RabbitMQ', 'JMS', 'Messaging', 'Java'],
+    tags: ['RabbitMQ', 'Spring Boot', 'Java', 'Backend'],
     href: internal('rabbitmq-spring-boot'),
-    active: false,
+    active: true,
+    pageStructure: '/pageStructures/references/RabbitmqSpringBoot.md',
+    content: '',
   },
   {
-    id: 'kafka-basics',
-    title: 'Apache Kafka Basics',
+    id: 'rabbitmq-deployment-monitoring',
+    title: 'RabbitMQ Deployment & Monitoring',
     description:
-      'Brokers, topics, partitions, producers, consumers, consumer groups, offsets, retention, and stream processing overview.',
+      'Security, monitoring, Prometheus and Grafana setup, deployment strategies, Docker, Kubernetes, backup, recovery, and troubleshooting.',
+    type: 'Docs',
+    level: 'Advanced',
+    tags: ['RabbitMQ', 'DevOps', 'Monitoring', 'Backend'],
+    href: internal('rabbitmq-deployment-monitoring'),
+    active: true,
+    pageStructure: '/pageStructures/references/RabbitmqDeploymentMonitoring.md',
+    content: '',
+  },
+  {
+    id: 'kafka-fundamentals',
+    title: 'Apache Kafka Fundamentals',
+    description:
+      'Core concepts, architecture, topics, partitions, replication, log storage, and KRaft mode explained in depth.',
     type: 'Docs',
     level: 'Intermediate',
     tags: ['Kafka', 'Messaging', 'Event Streaming', 'Backend'],
-    href: internal('kafka-basics'),
+    href: internal('kafka-fundamentals'),
     active: true,
-    pageStructure: '/pageStructures/references/KafkaBasics.md',
-    content: '/configs/references/kafka-basics.json',
+    pageStructure: '/pageStructures/references/KafkaFundamentals.md',
+    content: '/configs/references/kafka-fundamentals.json',
+  },
+  {
+    id: 'kafka-development',
+    title: 'Apache Kafka Development',
+    description:
+      'Producers, consumers, serialization, transactions, Kafka Streams, Kafka Connect, and ksqlDB with code examples.',
+    type: 'Docs',
+    level: 'Intermediate',
+    tags: ['Kafka', 'Messaging', 'Event Streaming', 'Backend'],
+    href: internal('kafka-development'),
+    active: true,
+    pageStructure: '/pageStructures/references/KafkaDevelopment.md',
+    content: '',
+  },
+  {
+    id: 'kafka-operations',
+    title: 'Apache Kafka Operations',
+    description:
+      'Security, monitoring, performance tuning, cluster management, CLI reference, and troubleshooting for production Kafka.',
+    type: 'Docs',
+    level: 'Advanced',
+    tags: ['Kafka', 'DevOps', 'Backend', 'Performance'],
+    href: internal('kafka-operations'),
+    active: true,
+    pageStructure: '/pageStructures/references/KafkaOperations.md',
+    content: '',
+  },
+  {
+    id: 'kafka-spring-boot',
+    title: 'Kafka with Spring Boot',
+    description:
+      'Spring Kafka and Spring Cloud Stream integration — producers, consumers, error handling, transactions, architecture patterns, and testing.',
+    type: 'Docs',
+    level: 'Intermediate',
+    tags: ['Kafka', 'Spring Boot', 'Java', 'Backend'],
+    href: internal('kafka-spring-boot'),
+    active: true,
+    pageStructure: '/pageStructures/references/KafkaSpringBoot.md',
+    content: '',
   },
   {
     id: 'kafka-spring-boot',
@@ -164,37 +263,108 @@ const referenceCatalog = [
     active: false,
   },
   {
-    id: 'spring-boot-basics',
-    title: 'Spring Boot Basics',
+    id: 'spring-boot-fundamentals',
+    title: 'Spring Boot Fundamentals',
     description:
-      'Auto-configuration, starters, embedded servers, properties, profiles, beans, Actuator, and application structure.',
+      'What is Spring Boot, history, auto-configuration internals, starters, SpringApplication class, lifecycle, embedded server, profiles, and configuration properties.',
     type: 'Docs',
     level: 'Beginner',
-    tags: ['Spring Boot', 'Java', 'Backend'],
-    href: internal('spring-boot-basics'),
-    active: false,
+    tags: ['Spring Boot', 'Java', 'Backend', 'Framework'],
+    href: internal('spring-boot-fundamentals'),
+    active: true,
+    pageStructure: '/pageStructures/references/springBoot/springBootFundamentals.md',
+    content: '/configs/references/spring-boot-fundamentals.json',
   },
   {
-    id: 'spring-reactive',
-    title: 'Spring WebFlux & Reactive',
+    id: 'spring-boot-core',
+    title: 'Spring Boot Core',
     description:
-      'Reactive streams, Mono/Flux, WebClient, functional endpoints, backpressure, and reactive data access.',
-    type: 'Docs',
-    level: 'Advanced',
-    tags: ['Spring Boot', 'WebFlux', 'Reactive', 'Java'],
-    href: internal('spring-reactive'),
-    active: false,
-  },
-  {
-    id: 'spring-security',
-    title: 'Spring Security',
-    description:
-      'SecurityFilterChain, authentication, authorization, JWT, OAuth2 resource server, CSRF, CORS, and method security.',
+      'Dependency injection, all bean annotations, bean lifecycle, scopes, component scanning, conditional annotations, AOP, events, and ApplicationContext.',
     type: 'Docs',
     level: 'Intermediate',
-    tags: ['Spring Security', 'OAuth2', 'JWT', 'Java'],
-    href: internal('spring-security'),
-    active: false,
+    tags: ['Spring Boot', 'Java', 'Backend', 'Framework'],
+    href: internal('spring-boot-core'),
+    active: true,
+    pageStructure: '/pageStructures/references/springBoot/springBootCore.md',
+    content: '',
+  },
+  {
+    id: 'spring-boot-web',
+    title: 'Spring Boot Web',
+    description:
+      'REST controllers, all input and return formats, validation, exception handling, filters, interceptors, CORS, file upload and download, content negotiation.',
+    type: 'Docs',
+    level: 'Intermediate',
+    tags: ['Spring Boot', 'Java', 'REST', 'Backend'],
+    href: internal('spring-boot-web'),
+    active: true,
+    pageStructure: '/pageStructures/references/springBoot/springBootWeb.md',
+    content: '',
+  },
+  {
+    id: 'spring-boot-data',
+    title: 'Spring Boot Data & JPA',
+    description:
+      'JPA deep dive, all entity and relationship annotations, repository methods, JPQL, transactions, Hibernate internals, pagination, auditing, and database migrations.',
+    type: 'Docs',
+    level: 'Intermediate',
+    tags: ['Spring Boot', 'JPA', 'Hibernate', 'Database', 'Backend'],
+    href: internal('spring-boot-data'),
+    active: true,
+    pageStructure: '/pageStructures/references/springBoot/springBootData.md',
+    content: '',
+  },
+  {
+    id: 'spring-boot-security',
+    title: 'Spring Boot Security',
+    description:
+      'Security filter chain, all security annotations, authentication, JWT, OAuth2, authorization, CSRF, CORS, session management, and custom filters.',
+    type: 'Docs',
+    level: 'Advanced',
+    tags: ['Spring Boot', 'Security', 'JWT', 'OAuth2', 'Backend'],
+    href: internal('spring-boot-security'),
+    active: true,
+    pageStructure: '/pageStructures/references/springBoot/springBootSecurity.md',
+    content: '',
+  },
+  {
+    id: 'spring-boot-advanced',
+    title: 'Spring Boot Advanced',
+    description:
+      'JMS, file handling, async processing, scheduling, caching, virtual threads, WebFlux reactive programming, WebSocket, SSE, REST clients, i18n, events, and advanced configuration patterns.',
+    type: 'Docs',
+    level: 'Advanced',
+    tags: ['Spring Boot', 'Java', 'Reactive', 'WebFlux', 'Backend'],
+    href: internal('spring-boot-advanced'),
+    active: true,
+    pageStructure: '/pageStructures/references/springBoot/springBootAdvanced.md',
+    content: '',
+  },
+  {
+    id: 'spring-boot-testing',
+    title: 'Spring Boot Testing',
+    description:
+      'Unit testing, JUnit 5, Mockito, all test annotations, test slices, MockMvc, TestRestTemplate, WebTestClient, Testcontainers, and integration testing patterns.',
+    type: 'Docs',
+    level: 'Intermediate',
+    tags: ['Spring Boot', 'Testing', 'JUnit', 'Mockito', 'Backend'],
+    href: internal('spring-boot-testing'),
+    active: true,
+    pageStructure: '/pageStructures/references/springBoot/springBootTesting.md',
+    content: '',
+  },
+  {
+    id: 'spring-boot-deployment',
+    title: 'Spring Boot Deployment & Monitoring',
+    description:
+      'Actuator, Micrometer metrics, logging, Docker, Kubernetes, GraalVM native image, Prometheus, Grafana, performance tuning, and troubleshooting.',
+    type: 'Docs',
+    level: 'Advanced',
+    tags: ['Spring Boot', 'DevOps', 'Docker', 'Kubernetes', 'Monitoring'],
+    href: internal('spring-boot-deployment'),
+    active: true,
+    pageStructure: '/pageStructures/references/springBoot/springBootDeployment.md',
+    content: '',
   },
   {
     id: 'keycloak',
@@ -401,7 +571,7 @@ export const referenceLevels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 /** Active references shown on the listing page. */
 export const references = referenceCatalog.filter((ref) => ref.active === true);
 
-export const referenceAllTags = [...new Set(referenceCatalog.flatMap((r) => r.tags))].sort((a, b) =>
+export const referenceAllTags = [...new Set(references.flatMap((r) => r.tags))].sort((a, b) =>
   a.localeCompare(b),
 );
 
@@ -459,9 +629,7 @@ export const sortReferences = (items, sortBy = 'title') => {
     case 'title':
       return sorted.sort((a, b) => a.title.localeCompare(b.title));
     case 'type':
-      return sorted.sort(
-        (a, b) => a.type.localeCompare(b.type) || a.title.localeCompare(b.title),
-      );
+      return sorted.sort((a, b) => a.type.localeCompare(b.type) || a.title.localeCompare(b.title));
     default:
       return sorted;
   }

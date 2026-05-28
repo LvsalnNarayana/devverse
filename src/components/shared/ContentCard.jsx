@@ -5,6 +5,8 @@ import React from 'react';
 import { Box, Paper, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 
+import { RICH_HTML_SX } from '../../utils/richHtml';
+
 export default function ContentCard({
   subheading,
   eyebrow,
@@ -97,16 +99,9 @@ export default function ContentCard({
           lineHeight: 1.7,
           '& > :first-of-type': { mt: 0 },
           '& > :last-child': { mb: 0 },
+          ...RICH_HTML_SX,
           '& p': { my: 1.25 },
           '& ul, & ol': { pl: 3, my: 1 },
-          '& li': { mb: 0.5 },
-          '& code': {
-            px: 0.75,
-            py: 0.25,
-            borderRadius: 0.75,
-            fontSize: '0.85em',
-            bgcolor: 'action.hover',
-          },
         }}
       >
         {children}

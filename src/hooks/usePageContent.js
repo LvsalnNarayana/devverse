@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { extractPageToc } from '../utils/extractPageToc';
 import { parsePageContent } from '../utils/parsePageContent';
 
 const pageStructureJsonModules = import.meta.glob('../../pageStructures/**/*.json', {
@@ -81,11 +82,13 @@ export function usePageContent(contentPath) {
     error: '',
     meta: {},
     blocks: [],
+    tocItems: [],
+    tocGroups: [],
   });
 
   useEffect(() => {
     if (!contentPath) {
-      setState({ loading: false, error: '', meta: {}, blocks: [] });
+      setState({ loading: false, error: '', meta: {}, blocks: [], tocItems: [], tocGroups: [] });
       return;
     }
 
@@ -94,11 +97,14 @@ export function usePageContent(contentPath) {
     loadPageContentJson(contentPath)
       .then((raw) => {
         const parsed = parsePageContent(raw);
+        const toc = extractPageToc(raw);
         setState({
           loading: false,
           error: '',
           meta: parsed.meta,
           blocks: parsed.blocks,
+          tocItems: toc.items,
+          tocGroups: toc.groups,
         });
       })
       .catch((error) => {
@@ -107,6 +113,8 @@ export function usePageContent(contentPath) {
           error: error?.message || 'Failed to load page content.',
           meta: {},
           blocks: [],
+          tocItems: [],
+          tocGroups: [],
         });
       });
   }, [contentPath]);

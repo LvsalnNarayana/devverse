@@ -20,6 +20,8 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 
+import RichText from './RichText';
+
 const TONE_COLORS = {
   better: 'success.main',
   good: 'success.main',
@@ -32,27 +34,39 @@ const TONE_COLORS = {
 /**
  * @param {unknown} cell
  */
-function renderCellContent(cell) {
+function renderTableCell(cell) {
   if (cell == null) return '–';
+
   if (typeof cell === 'object' && cell !== null && 'value' in cell) {
     const tone = cell.tone ?? cell.variant;
     return (
-      <Typography
+      <RichText
+        content={cell.value ?? '–'}
         variant="body2"
         component="span"
+        fontWeight={tone ? 600 : 400}
         sx={{
-          fontWeight: tone ? 600 : 400,
-          color: tone ? TONE_COLORS[tone] ?? 'text.primary' : 'text.primary',
+          color: tone ? (TONE_COLORS[tone] ?? 'text.primary') : 'text.primary',
         }}
-      >
-        {cell.value ?? '–'}
-      </Typography>
+      />
     );
   }
+
+  if (typeof cell === 'string' || typeof cell === 'number') {
+    return <RichText content={cell} variant="body2" component="span" />;
+  }
+
   return cell;
 }
 
 /**
+ * BasicTable
+ *
+ * Row-level highlight:
+ *   Set `row.highlight = true` to apply a primary-colour background to that row.
+ *   Works across all tableVariants — no variant restriction.
+ *   Pairs well with `tableVariant="comparison"` for active-operation highlighting.
+ *
  * @param {'default'|'plain'|'striped'|'interactive'|'comparison'} [tableVariant]
  */
 export default function BasicTable({
@@ -211,23 +225,41 @@ export default function BasicTable({
                   }
                   sx={(theme) => ({
                     cursor: isInteractive ? 'pointer' : 'default',
-                    transition: 'background-color 120ms ease',
+                    transition: 'background-color 150ms ease',
+
+                    // ── Striped (only when row is NOT highlighted) ──────────
                     ...(resolvedStriped &&
-                      rowIdx % 2 === 1 && {
+                      rowIdx % 2 === 1 &&
+                      !row.highlight && {
                         backgroundColor: alpha(theme.palette.text.primary, 0.025),
                       }),
+
+                    // ── Hover ─────────────────────────────────────────────
                     ...(resolvedHover && {
                       '&:hover': {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                        backgroundColor: row.highlight
+                          ? alpha(theme.palette.primary.main, 0.14)
+                          : alpha(theme.palette.primary.main, 0.08),
                       },
                     }),
-                    ...(isComparison &&
-                      row.highlight && {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.06),
-                      }),
+
+                    // ── Primary highlight — works on ANY tableVariant ──────
+                    // Set row.highlight = true to activate.
+                    // Draws a left accent border + primary background tint.
+                    ...(row.highlight && {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.09),
+                      borderLeft: `3px solid ${theme.palette.primary.main}`,
+                      '& td:first-of-type': {
+                        paddingLeft: '13px', // compensate for the 3px border
+                      },
+                    }),
+
                     '& td': {
                       borderBottom: '1px solid',
-                      borderColor: theme.palette.divider,
+                      borderColor: row.highlight
+                        ? alpha(theme.palette.primary.main, 0.18)
+                        : theme.palette.divider,
+                      transition: 'border-color 150ms ease',
                     },
                     '&:last-of-type td': { borderBottom: 0 },
                   })}
@@ -252,9 +284,7 @@ export default function BasicTable({
                       ? col.render(row)
                       : col.formatter
                         ? col.formatter(value, row)
-                        : isComparison
-                          ? renderCellContent(value)
-                          : (value ?? '–');
+                        : renderTableCell(value);
                     return (
                       <TableCell
                         key={field}

@@ -1,0 +1,45 @@
+{
+  "page": "/references/kafka-basics",
+  "section": "Reference Library / Messaging",
+  "module": "references",
+  "referenceId": "kafka-basics",
+  "pageStructure": "/pageStructures/references/KafkaBasics.md",
+  "blocks": [
+    {
+      "type": "subsection",
+      "title": "Core concepts",
+      "blocks": [
+        {
+          "type": "contentCard",
+          "title": "Broker & cluster",
+          "variant": "tinted",
+          "paragraphs": [
+            "Kafka runs as a distributed cluster of brokers. Each broker stores partition replicas and serves produce/fetch requests. ZooKeeper or KRaft coordinates cluster metadata depending on deployment mode."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "subsection",
+      "title": "Producer & consumer flow",
+      "blocks": [
+        {
+          "type": "list",
+          "variant": "ordered",
+          "items": [
+            "Producer serializes a record (key, value, headers) and picks a partition (key hash or explicit).",
+            "Broker appends the batch to the partition log and acknowledges based on acks config.",
+            "Consumer polls, receives batches, processes, then commits offsets (auto or manual).",
+            "Retention policies or compaction govern how long data remains addressable by offset."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "alert",
+      "severity": "info",
+      "title": "Delivery semantics (at a glance)",
+      "bodyHtml": "At-most-once skips retry on failure; at-least-once retries but may duplicate; exactly-once needs idempotent producers, transactions, and careful consumer offset management."
+    }
+  ]
+}
