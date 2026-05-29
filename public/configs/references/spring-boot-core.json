@@ -1,0 +1,2871 @@
+{
+    "id": "spring-boot-core",
+    "title": "Spring Boot Core",
+    "content": "Reference for dependency injection, bean annotations, lifecycle, scopes, component scanning, conditional annotations, application events, ApplicationContext, and AOP.",
+    "sections": [
+        {
+            "id": "spring-ioc",
+            "title": "Spring IoC Container",
+            "description": "Inversion of Control concepts, container mechanics, BeanDefinition, and container bootstrapping.",
+            "blocks": [
+                {
+                    "id": "ioc-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Inversion of Control (IoC) means the framework controls object creation and wiring instead of application code. In traditional code, a class instantiates its own dependencies: <code>new OrderService(new JdbcOrderRepository(new DataSource(...)))</code>. With IoC, the container owns that graph — you declare what each class needs; the container builds and connects everything.</p><p>Spring's IoC container is the <code>BeanFactory</code> and its extension <code>ApplicationContext</code>. At startup it reads bean definitions from configuration sources (annotations, Java config, XML), resolves the dependency graph, instantiates beans in the correct order, and manages their full lifecycle. Application code receives fully-wired objects.</p>"
+                },
+                {
+                    "id": "ioc-vs-traditional-diagram",
+                    "type": "diagram",
+                    "active": true,
+                    "title": "Traditional vs IoC Object Creation",
+                    "description": "PROMPT FOR DIAGRAM GENERATION:\n\nGenerate a Mermaid diagram comparing traditional object creation against Spring IoC container-managed creation.\n\nUse `graph TD` layout with two side-by-side subgraphs.\n\nLeft subgraph — label: `Traditional (Manual Wiring)`:\n- `main()` → creates → `DataSource`\n- `main()` → creates → `JdbcOrderRepository(DataSource)`\n- `main()` → creates → `PaymentGateway`\n- `main()` → creates → `OrderService(JdbcOrderRepository, PaymentGateway)`\n- Note: `Application code owns object graph`\n\nRight subgraph — label: `IoC Container`:\n- `@Configuration / @Component` → `BeanDefinitions`\n- `BeanDefinitions` → read by → `ApplicationContext`\n- `ApplicationContext` → resolves dependency graph\n- `ApplicationContext` → instantiates → `DataSource`, `OrderRepository`, `PaymentGateway`, `OrderService`\n- `ApplicationContext` → injects → dependencies automatically\n- Note: `Container owns object graph. Code declares needs.`\n\nStyle: monochrome, rectangular nodes, clear subgraph borders."
+                },
+                {
+                    "id": "ioc-core-concepts",
+                    "type": "contentCard",
+                    "active": true,
+                    "variant": "tinted",
+                    "subheading": "Core IoC Concepts",
+                    "paragraphs": [
+                        "<ul><li><strong>BeanDefinition:</strong> Metadata describing a bean — class, scope, init/destroy method names, constructor args, property values. The container builds this from your annotations or config classes before instantiating anything.</li><li><strong>BeanFactory:</strong> The root interface. Provides <code>getBean()</code> and lazy instantiation. Rarely used directly in production code.</li><li><strong>ApplicationContext:</strong> Extends <code>BeanFactory</code> with eager instantiation of singletons, event publishing, i18n, and AOP integration. The container you interact with in Spring Boot.</li><li><strong>BeanDefinitionRegistry:</strong> Where <code>BeanDefinition</code> objects are stored. <code>ApplicationContext</code> implements this. You can register beans programmatically here before context refresh.</li><li><strong>BeanPostProcessor:</strong> Hooks into the instantiation pipeline to wrap or modify beans after construction. AOP proxy creation, <code>@Autowired</code> injection, and <code>@Value</code> resolution all run through <code>BeanPostProcessor</code> implementations.</li></ul>"
+                    ]
+                },
+                {
+                    "id": "ioc-container-flow-diagram",
+                    "type": "diagram",
+                    "active": true,
+                    "title": "IoC Container Bootstrapping Flow",
+                    "description": "PROMPT FOR DIAGRAM GENERATION:\n\nGenerate a Mermaid flowchart showing how the Spring IoC container bootstraps from configuration to a running context.\n\nUse `flowchart TD` layout.\n\nSteps in order:\n1. `Configuration Sources` — three parallel input nodes:\n   - `@Component-annotated classes` (via classpath scan)\n   - `@Configuration + @Bean methods` (explicit declarations)\n   - `XML or properties files` (legacy / external config)\n2. → `BeanDefinitionReader` parses each source\n3. → `BeanDefinition objects` registered in `BeanDefinitionRegistry`\n4. → `BeanFactoryPostProcessor` runs (e.g. PropertyPlaceholderConfigurer resolves ${...} placeholders in definitions)\n5. → `Dependency graph resolved` — instantiation order determined\n6. → For each BeanDefinition (singleton, in order):\n   a. `Instantiation` — constructor called\n   b. `BeanPostProcessor.postProcessBeforeInitialization()`\n   c. `Init callbacks` (@PostConstruct, afterPropertiesSet, initMethod)\n   d. `BeanPostProcessor.postProcessAfterInitialization()` — AOP proxy created here\n7. → `ApplicationContext ready` — all singleton beans in cache\n8. → `Application code calls getBean() or uses injected refs` — returns cached singleton\n\nStyle: decision-free flowchart, rectangular nodes, monochrome, subgraph for step 6 labeled `Per-Bean Initialization`."
+                },
+                {
+                    "id": "bean-definition-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "BeanDefinition Properties",
+                    "columns": [
+                        {
+                            "key": "property",
+                            "label": "Property"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "property": "<code>beanClassName</code>",
+                            "description": "Fully-qualified class name of the bean."
+                        },
+                        {
+                            "id": 2,
+                            "property": "<code>scope</code>",
+                            "description": "Bean scope: <code>singleton</code>, <code>prototype</code>, <code>request</code>, etc."
+                        },
+                        {
+                            "id": 3,
+                            "property": "<code>lazyInit</code>",
+                            "description": "If true, bean is created on first access rather than at context refresh."
+                        },
+                        {
+                            "id": 4,
+                            "property": "<code>constructorArgumentValues</code>",
+                            "description": "Constructor arguments — types and values resolved before instantiation."
+                        },
+                        {
+                            "id": 5,
+                            "property": "<code>propertyValues</code>",
+                            "description": "Property-based dependencies injected after construction."
+                        },
+                        {
+                            "id": 6,
+                            "property": "<code>initMethodName</code>",
+                            "description": "Method to call after initialization. Equivalent to <code>@Bean(initMethod=...)</code>."
+                        },
+                        {
+                            "id": 7,
+                            "property": "<code>destroyMethodName</code>",
+                            "description": "Method to call on context close."
+                        },
+                        {
+                            "id": 8,
+                            "property": "<code>primary</code>",
+                            "description": "If true, this bean is preferred over others of the same type when auto-wiring."
+                        },
+                        {
+                            "id": 9,
+                            "property": "<code>dependsOn</code>",
+                            "description": "Bean names that must be initialized before this one. Enforces ordering without a direct dependency."
+                        },
+                        {
+                            "id": 10,
+                            "property": "<code>autowireCandidate</code>",
+                            "description": "If false, excluded from auto-wire resolution by type."
+                        }
+                    ]
+                },
+                {
+                    "id": "bean-definition-programmatic",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Programmatic BeanDefinition registration",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Register a bean programmatically before context refresh\n// Useful for dynamic bean registration based on runtime conditions\n\n@Configuration\npublic class DynamicBeanConfig implements BeanDefinitionRegistryPostProcessor {\n\n    @Override\n    public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {\n        // Build a BeanDefinition from scratch\n        GenericBeanDefinition def = new GenericBeanDefinition();\n        def.setBeanClass(PaymentProcessor.class);\n        def.setScope(BeanDefinition.SCOPE_SINGLETON);\n        def.getConstructorArgumentValues()\n            .addGenericArgumentValue(\"https://payment-gateway.example.com\");\n        def.setInitMethodName(\"connect\");\n        def.setDestroyMethodName(\"disconnect\");\n        def.setPrimary(true);\n\n        registry.registerBeanDefinition(\"paymentProcessor\", def);\n    }\n\n    @Override\n    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {\n        // Inspect or modify existing bean definitions\n        String[] names = beanFactory.getBeanDefinitionNames();\n        for (String name : names) {\n            BeanDefinition bd = beanFactory.getBeanDefinition(name);\n            if (bd.getBeanClassName() != null &&\n                bd.getBeanClassName().startsWith(\"com.example.legacy\")) {\n                bd.setLazyInit(true); // make all legacy beans lazy\n            }\n        }\n    }\n}"
+                },
+                {
+                    "id": "ioc-di-relationship",
+                    "type": "contentCard",
+                    "active": true,
+                    "variant": "outlined",
+                    "subheading": "IoC and Dependency Injection",
+                    "paragraphs": [
+                        "<p>IoC is the principle; Dependency Injection is the implementation mechanism. IoC says the container controls object creation. DI is how the container supplies dependencies — through constructors, setters, or field injection. Every DI-based framework implements IoC, but IoC can be implemented through other patterns (service locator, factory methods) that are not DI.</p><p>In Spring: the IoC container reads <code>BeanDefinition</code>s, determines the dependency graph, and resolves it using DI. When it creates <code>OrderService</code>, it sees that the constructor requires <code>OrderRepository</code>, finds the registered bean of that type, creates or retrieves it, and passes it in. This process recurses until the full graph is satisfied.</p>"
+                    ]
+                },
+                {
+                    "id": "ioc-configuration-sources-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "Bean Definition Sources",
+                    "columns": [
+                        {
+                            "key": "source",
+                            "label": "Source"
+                        },
+                        {
+                            "key": "mechanism",
+                            "label": "Mechanism"
+                        },
+                        {
+                            "key": "use_case",
+                            "label": "Use Case"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "source": "Component scan",
+                            "mechanism": "<code>@Component</code>, <code>@Service</code>, <code>@Repository</code>, <code>@Controller</code>",
+                            "use_case": "Application beans — domain classes, services, controllers, repositories."
+                        },
+                        {
+                            "id": 2,
+                            "source": "Java config",
+                            "mechanism": "<code>@Configuration</code> + <code>@Bean</code> methods",
+                            "use_case": "Infrastructure beans — DataSource, RestTemplate, third-party library instances that can't be annotated."
+                        },
+                        {
+                            "id": 3,
+                            "source": "Auto-configuration",
+                            "mechanism": "<code>@AutoConfiguration</code> + <code>@Conditional</code>",
+                            "use_case": "Spring Boot starters — auto-wired infrastructure activated by classpath presence."
+                        },
+                        {
+                            "id": 4,
+                            "source": "Programmatic registration",
+                            "mechanism": "<code>BeanDefinitionRegistry.registerBeanDefinition()</code>",
+                            "use_case": "Dynamic beans — number or type of beans determined at runtime."
+                        },
+                        {
+                            "id": 5,
+                            "source": "XML",
+                            "mechanism": "<code>&lt;bean&gt;</code> element in Spring XML",
+                            "use_case": "Legacy applications. Not used in modern Spring Boot."
+                        }
+                    ]
+                },
+                {
+                    "id": "ioc-container-types",
+                    "type": "contentCard",
+                    "active": true,
+                    "variant": "tinted",
+                    "subheading": "Container Refresh and Singleton Cache",
+                    "paragraphs": [
+                        "<ul><li><strong>Context refresh:</strong> The moment all singleton beans are instantiated. Triggered by <code>context.refresh()</code> internally during <code>SpringApplication.run()</code>. After refresh, the context is immutable — no new bean definitions can be added without a restart.</li><li><strong>Singleton cache:</strong> After a singleton bean is instantiated, it is stored in a <code>Map&lt;String, Object&gt;</code> inside <code>DefaultSingletonBeanRegistry</code>. Subsequent <code>getBean()</code> calls return the cached instance — no re-instantiation.</li><li><strong>Three-level cache:</strong> Spring uses three caches during instantiation to resolve circular dependencies for setter/field injection. Level 1: fully initialized singletons. Level 2: early exposed singletons (post-processed). Level 3: singleton factories (raw instances, pre-post-processing). Constructor injection bypasses this mechanism — circular deps fail fast.</li></ul>"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "dependency-injection",
+            "title": "Dependency Injection",
+            "description": "DI types, injection styles, trade-offs, and circular dependency handling.",
+            "blocks": [
+                {
+                    "id": "di-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Spring's IoC container manages bean creation and wiring. You declare what a class needs; the container supplies it. Three injection styles exist: constructor, setter, and field. They differ in immutability guarantees, testability, and when nullability errors surface.</p>"
+                },
+                {
+                    "id": "di-types-diagram",
+                    "type": "diagram",
+                    "active": true,
+                    "title": "DI Types Overview",
+                    "description": "PROMPT FOR DIAGRAM GENERATION:\n\nGenerate a Mermaid diagram showing the three Spring dependency injection styles and their key characteristics.\n\nUse `graph TD` layout.\n\nTop node: `Spring IoC Container`\nThree branches from the top node:\n1. `Constructor Injection`\n   - child note: `Dependencies passed via constructor`\n   - child note: `Immutable fields, required deps`\n   - child note: `Best for testing`\n2. `Setter Injection`\n   - child note: `Dependencies set via setter methods`\n   - child note: `Optional deps, reconfigurable`\n3. `Field Injection`\n   - child note: `@Autowired on field directly`\n   - child note: `No testing without Spring context`\n   - child note: `Avoid in production code`\n\nEach branch uses rectangular nodes. Add a warning marker node under `Field Injection` labeled `Not recommended`.\n\nStyle: monochrome, no color fills, clean."
+                },
+                {
+                    "id": "constructor-injection-desc",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Constructor injection passes all dependencies as constructor parameters. The bean is fully initialized by the time it exits the constructor. Spring 4.3+ auto-wires a single constructor without requiring <code>@Autowired</code>.</p>"
+                },
+                {
+                    "id": "constructor-injection-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "OrderService.java — constructor injection",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Service\npublic class OrderService {\n\n    private final OrderRepository orderRepository;\n    private final PaymentGateway paymentGateway;\n    private final NotificationService notificationService;\n\n    // @Autowired optional when single constructor (Spring 4.3+)\n    public OrderService(OrderRepository orderRepository,\n                        PaymentGateway paymentGateway,\n                        NotificationService notificationService) {\n        this.orderRepository = orderRepository;\n        this.paymentGateway = paymentGateway;\n        this.notificationService = notificationService;\n    }\n\n    public Order placeOrder(OrderRequest request) {\n        Order order = orderRepository.save(new Order(request));\n        paymentGateway.charge(order);\n        notificationService.notify(order);\n        return order;\n    }\n}"
+                },
+                {
+                    "id": "constructor-injection-benefits",
+                    "type": "contentCard",
+                    "active": true,
+                    "variant": "tinted",
+                    "subheading": "Constructor Injection Benefits",
+                    "paragraphs": [
+                        "<ul><li><strong>Immutability:</strong> Dependencies declared <code>final</code>. Cannot be reassigned after construction. Eliminates accidental state mutation.</li><li><strong>Null safety at construction time:</strong> A missing required bean fails fast — context refresh throws before the application starts. No <code>NullPointerException</code> at runtime.</li><li><strong>Testability:</strong> Instantiate the class directly in tests: <code>new OrderService(mockRepo, mockGateway, mockNotifier)</code>. No Spring context required.</li><li><strong>Explicit contract:</strong> All required dependencies visible in one place — the constructor signature. Easy to detect classes with too many dependencies.</li></ul>"
+                    ]
+                },
+                {
+                    "id": "setter-injection-desc",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Setter injection uses <code>@Autowired</code> on setter methods. Dependencies are injected after the constructor runs. Use for optional dependencies or when a class needs to be reconfigured after construction — both uncommon in typical Spring applications.</p>"
+                },
+                {
+                    "id": "setter-injection-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "ReportService.java — setter injection",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Service\npublic class ReportService {\n\n    private ReportFormatter formatter;\n    private AuditLogger auditLogger; // optional\n\n    // Required dependency via constructor\n    public ReportService(ReportFormatter formatter) {\n        this.formatter = formatter;\n    }\n\n    // Optional dependency via setter\n    @Autowired(required = false)\n    public void setAuditLogger(AuditLogger auditLogger) {\n        this.auditLogger = auditLogger;\n    }\n\n    public byte[] generate(ReportRequest request) {\n        byte[] report = formatter.format(request);\n        if (auditLogger != null) {\n            auditLogger.log(\"Report generated: \" + request.getId());\n        }\n        return report;\n    }\n}"
+                },
+                {
+                    "id": "field-injection-desc",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Field injection places <code>@Autowired</code> directly on instance fields. Spring uses reflection to inject the value after construction. The field cannot be <code>final</code>, and the class cannot be instantiated outside a Spring context without additional tooling.</p>"
+                },
+                {
+                    "id": "field-injection-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "UserService.java — field injection (avoid)",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Service\npublic class UserService {\n\n    // Cannot be final — Spring sets it via reflection after construction\n    @Autowired\n    private UserRepository userRepository;\n\n    @Autowired\n    private PasswordEncoder passwordEncoder;\n\n    public User create(String username, String rawPassword) {\n        String hash = passwordEncoder.encode(rawPassword);\n        return userRepository.save(new User(username, hash));\n    }\n\n    // Testing requires either full Spring context or\n    // ReflectionTestUtils.setField(service, \"userRepository\", mockRepo)\n}"
+                },
+                {
+                    "id": "field-injection-warning",
+                    "type": "alert",
+                    "active": true,
+                    "severity": "warning",
+                    "title": "Field Injection Drawbacks",
+                    "bodyHtml": "<strong>Not testable without Spring:</strong> To unit test, you must either load a Spring context or use <code>ReflectionTestUtils.setField()</code> — both add overhead. <strong>Hides dependencies:</strong> A class with 10 <code>@Autowired</code> fields has an obvious design problem, but it's easier to ignore than 10 constructor parameters. <strong>Cannot be final:</strong> Dependencies are mutable after construction, which violates encapsulation. <strong>Circular dependency masking:</strong> Field injection can hide circular dependencies that constructor injection would detect at startup."
+                },
+                {
+                    "id": "injection-comparison-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "comparison",
+                    "title": "Injection Style Comparison",
+                    "columns": [
+                        {
+                            "key": "aspect",
+                            "label": "Aspect"
+                        },
+                        {
+                            "key": "constructor",
+                            "label": "Constructor"
+                        },
+                        {
+                            "key": "setter",
+                            "label": "Setter"
+                        },
+                        {
+                            "key": "field",
+                            "label": "Field"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "aspect": "Immutability",
+                            "constructor": {
+                                "value": "Yes (final)",
+                                "tone": "better"
+                            },
+                            "setter": {
+                                "value": "No",
+                                "tone": "worse"
+                            },
+                            "field": {
+                                "value": "No",
+                                "tone": "worse"
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "aspect": "Required deps",
+                            "constructor": {
+                                "value": "Enforced at startup",
+                                "tone": "better"
+                            },
+                            "setter": {
+                                "value": "Runtime NPE risk",
+                                "tone": "worse"
+                            },
+                            "field": {
+                                "value": "Runtime NPE risk",
+                                "tone": "worse"
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "aspect": "Optional deps",
+                            "constructor": {
+                                "value": "Verbose",
+                                "tone": "neutral"
+                            },
+                            "setter": {
+                                "value": "Natural fit",
+                                "tone": "better"
+                            },
+                            "field": {
+                                "value": "Possible",
+                                "tone": "neutral"
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "aspect": "Unit testability",
+                            "constructor": {
+                                "value": "No Spring needed",
+                                "tone": "better"
+                            },
+                            "setter": {
+                                "value": "No Spring needed",
+                                "tone": "better"
+                            },
+                            "field": {
+                                "value": "Requires Spring or reflection",
+                                "tone": "worse"
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "aspect": "Circular dep detection",
+                            "constructor": {
+                                "value": "Detected at startup",
+                                "tone": "better"
+                            },
+                            "setter": {
+                                "value": "Not detected",
+                                "tone": "worse"
+                            },
+                            "field": {
+                                "value": "Not detected",
+                                "tone": "worse"
+                            }
+                        },
+                        {
+                            "id": 6,
+                            "aspect": "Recommended",
+                            "constructor": {
+                                "value": "Yes — default choice",
+                                "tone": "better"
+                            },
+                            "setter": {
+                                "value": "Optional deps only",
+                                "tone": "neutral"
+                            },
+                            "field": {
+                                "value": "No",
+                                "tone": "worse"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "circular-dependency",
+                    "type": "contentCard",
+                    "active": true,
+                    "variant": "outlined",
+                    "subheading": "Circular Dependencies",
+                    "paragraphs": [
+                        "<p>A circular dependency exists when Bean A requires Bean B and Bean B requires Bean A. With constructor injection, Spring detects this at startup and throws <code>BeanCurrentlyInCreationException</code>. With field or setter injection, Spring resolves it using partially-initialized proxies — the dependency is injected before the bean finishes initialization, which can lead to subtle bugs.</p><p>The correct fix is a design change: extract the shared logic into a third bean, or use an event-driven approach to break the dependency. As a last resort, annotate one constructor parameter with <code>@Lazy</code> — Spring injects a proxy and resolves the real bean on first method call. Setting <code>spring.main.allow-circular-references=true</code> (Boot 2.6+ default: false) re-enables the old behavior; avoid this — it treats a symptom, not the cause.</p>"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "bean-annotations",
+            "title": "Bean Annotations Complete Reference",
+            "description": "Full attribute reference for component stereotypes, bean declaration, and injection annotations.",
+            "blocks": [
+                {
+                    "id": "bean-annotations-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Spring's bean annotations fall into three categories: component stereotypes (<code>@Component</code> and its specializations), bean declaration annotations (<code>@Bean</code>, <code>@Configuration</code>), and injection annotations (<code>@Autowired</code>, <code>@Qualifier</code>, <code>@Primary</code>). Stereotype annotations trigger component scanning; <code>@Bean</code> methods register beans explicitly in a configuration class.</p>"
+                },
+                {
+                    "id": "at-component-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Component",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Bean name. If empty, defaults to the simple class name with the first letter lowercased: <code>MyComponent</code> → <code>myComponent</code>."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-component-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Component usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Default bean name: \"urlParser\"\n@Component\npublic class UrlParser {\n    public URL parse(String url) { ... }\n}\n\n// Explicit bean name\n@Component(\"legacyParser\")\npublic class LegacyUrlParser implements UrlParser {\n    public URL parse(String url) { ... }\n}"
+                },
+                {
+                    "id": "at-service-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Service",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Bean name. Semantically identical to <code>@Component</code>. Marks the class as a service-layer component. Triggers exception translation when combined with Spring Data."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-service-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Service usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Service\npublic class PaymentService {\n\n    private final PaymentRepository repo;\n    private final PaymentGateway gateway;\n\n    public PaymentService(PaymentRepository repo, PaymentGateway gateway) {\n        this.repo = repo;\n        this.gateway = gateway;\n    }\n\n    @Transactional\n    public Payment process(PaymentRequest request) {\n        Payment payment = repo.save(new Payment(request));\n        gateway.charge(payment);\n        return payment;\n    }\n}"
+                },
+                {
+                    "id": "at-repository-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Repository",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Bean name. Activates Spring's persistence exception translation: vendor-specific exceptions (<code>SQLException</code>, Hibernate exceptions) are wrapped in Spring's <code>DataAccessException</code> hierarchy."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-repository-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Repository usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Repository\npublic class JdbcOrderRepository implements OrderRepository {\n\n    private final JdbcTemplate jdbc;\n\n    public JdbcOrderRepository(JdbcTemplate jdbc) {\n        this.jdbc = jdbc;\n    }\n\n    @Override\n    public Optional<Order> findById(Long id) {\n        // SQLException is automatically translated to DataAccessException\n        return jdbc.query(\n            \"SELECT * FROM orders WHERE id = ?\",\n            new OrderRowMapper(),\n            id\n        ).stream().findFirst();\n    }\n}"
+                },
+                {
+                    "id": "at-controller-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Controller",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Bean name. Marks the class as an MVC controller. Handler methods return view names or model-and-view objects. Use <code>@ResponseBody</code> on individual methods to return raw data."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-rest-controller-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@RestController",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Bean name. Composed annotation: <code>@Controller</code> + <code>@ResponseBody</code>. All handler methods serialize return values directly to the HTTP response body via <code>HttpMessageConverter</code>."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-bean-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Bean Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>name</code> / <code>value</code>",
+                            "type": "<code>String[]</code>",
+                            "default": "Method name",
+                            "description": "One or more bean names. First name is the primary; additional names are aliases."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>initMethod</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Name of the method to call after the bean is initialized. Alternative to <code>@PostConstruct</code> for third-party classes."
+                        },
+                        {
+                            "id": 3,
+                            "attribute": "<code>destroyMethod</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"(inferred)\"</code>",
+                            "description": "Name of the method to call during context shutdown. Default auto-detects <code>close()</code> or <code>shutdown()</code> methods."
+                        },
+                        {
+                            "id": 4,
+                            "attribute": "<code>autowireCandidate</code>",
+                            "type": "<code>boolean</code>",
+                            "default": "<code>true</code>",
+                            "description": "If false, the bean is excluded from auto-wire resolution. Can still be retrieved by name."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-bean-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Bean declaration",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Configuration\npublic class InfrastructureConfig {\n\n    // Bean name: \"dataSource\" (method name)\n    @Bean\n    public DataSource dataSource() {\n        HikariConfig config = new HikariConfig();\n        config.setJdbcUrl(\"jdbc:postgresql://localhost:5432/mydb\");\n        config.setMaximumPoolSize(20);\n        return new HikariDataSource(config);\n    }\n\n    // Bean name: \"redisClient\", aliases: [\"cacheClient\"]\n    // initMethod and destroyMethod for third-party class\n    @Bean(name = {\"redisClient\", \"cacheClient\"}, destroyMethod = \"shutdown\")\n    public RedisClient redisClient() {\n        return RedisClient.create(\"redis://localhost:6379\");\n    }\n\n    // Depends on dataSource() — Spring calls the method\n    // through proxy to return the same singleton instance\n    @Bean\n    public JdbcTemplate jdbcTemplate(DataSource dataSource) {\n        return new JdbcTemplate(dataSource);\n    }\n}"
+                },
+                {
+                    "id": "at-configuration-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Configuration Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Bean name for the configuration class itself."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>proxyBeanMethods</code>",
+                            "type": "<code>boolean</code>",
+                            "default": "<code>true</code>",
+                            "description": "If true, Spring subclasses the configuration class with CGLIB. Inter-bean <code>@Bean</code> method calls go through the proxy and return the singleton. If false, calls go directly — each call creates a new instance."
+                        },
+                        {
+                            "id": 3,
+                            "attribute": "<code>enforceUniqueMethods</code>",
+                            "type": "<code>boolean</code>",
+                            "default": "<code>true</code>",
+                            "description": "If false, allows overloaded <code>@Bean</code> methods. Not recommended — leads to ambiguous bean definitions."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-configuration-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Configuration — proxyBeanMethods",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// proxyBeanMethods=true (default)\n// dataSource() is called once; jdbcTemplate() gets the same instance\n@Configuration\npublic class ProxiedConfig {\n    @Bean\n    public DataSource dataSource() { return new HikariDataSource(...); }\n\n    @Bean\n    public JdbcTemplate jdbcTemplate() {\n        return new JdbcTemplate(dataSource()); // proxy intercepts — returns singleton\n    }\n}\n\n// proxyBeanMethods=false — Lite mode\n// No CGLIB subclass. Faster startup. Use when @Bean methods are not called directly.\n@Configuration(proxyBeanMethods = false)\npublic class LiteConfig {\n    @Bean\n    public JwtParser jwtParser(JwtProperties props) {\n        return Jwts.parserBuilder()\n            .setSigningKey(props.getSecretKey())\n            .build();\n    }\n}"
+                },
+                {
+                    "id": "at-autowired-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Autowired Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>required</code>",
+                            "type": "<code>boolean</code>",
+                            "default": "<code>true</code>",
+                            "description": "If true, throws <code>NoSuchBeanDefinitionException</code> at startup when no matching bean exists. If false, leaves the dependency null when absent — use for optional dependencies."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-autowired-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Autowired — optional and collection injection",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Service\npublic class NotificationService {\n\n    // Collects ALL beans implementing NotificationChannel into a list\n    // Order determined by @Order or Ordered interface\n    @Autowired\n    private List<NotificationChannel> channels;\n\n    // Optional — null if no MetricsCollector bean exists\n    @Autowired(required = false)\n    private MetricsCollector metricsCollector;\n\n    // Inject all beans of a type as a Map: key=bean name, value=bean instance\n    @Autowired\n    private Map<String, NotificationChannel> channelMap;\n\n    public void notify(String message) {\n        channels.forEach(ch -> ch.send(message));\n    }\n}"
+                },
+                {
+                    "id": "at-qualifier-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Qualifier Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Bean name or qualifier label to match against. Resolves ambiguity when multiple beans of the same type exist. Can be placed on both the injection point and the bean definition."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-qualifier-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Qualifier — disambiguation",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Configuration\npublic class DataSourceConfig {\n\n    @Bean\n    @Qualifier(\"primary\")\n    public DataSource primaryDataSource() {\n        return buildDataSource(\"jdbc:postgresql://primary:5432/mydb\");\n    }\n\n    @Bean\n    @Qualifier(\"replica\")\n    public DataSource replicaDataSource() {\n        return buildDataSource(\"jdbc:postgresql://replica:5432/mydb\");\n    }\n}\n\n@Repository\npublic class UserRepository {\n\n    private final JdbcTemplate writeJdbc;\n    private final JdbcTemplate readJdbc;\n\n    public UserRepository(@Qualifier(\"primary\") DataSource primary,\n                          @Qualifier(\"replica\") DataSource replica) {\n        this.writeJdbc = new JdbcTemplate(primary);\n        this.readJdbc = new JdbcTemplate(replica);\n    }\n}"
+                },
+                {
+                    "id": "at-primary-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Primary",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "(none)",
+                            "type": "—",
+                            "description": "Marks a bean as the preferred candidate when multiple beans of the same type exist and no <code>@Qualifier</code> is specified. Only one bean per type should be <code>@Primary</code>."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-primary-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Primary — default bean selection",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Configuration\npublic class CacheConfig {\n\n    @Bean\n    @Primary // Used when no @Qualifier is specified\n    public CacheManager redisCacheManager(RedisConnectionFactory factory) {\n        return RedisCacheManager.builder(factory)\n            .cacheDefaults(RedisCacheConfiguration.defaultCacheConfig()\n                .entryTtl(Duration.ofMinutes(10)))\n            .build();\n    }\n\n    @Bean\n    public CacheManager inMemoryCacheManager() {\n        return new ConcurrentMapCacheManager(\"temp\");\n    }\n}\n\n@Service\npublic class ProductService {\n    // Injects redisCacheManager — @Primary wins over inMemoryCacheManager\n    @Autowired\n    private CacheManager cacheManager;\n}"
+                },
+                {
+                    "id": "at-resource-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Resource (Jakarta EE)",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>name</code>",
+                            "type": "<code>String</code>",
+                            "default": "Field or property name",
+                            "description": "Bean name to inject. Resolution order: by name → by type → by qualifier. From <code>jakarta.annotation.Resource</code>."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>type</code>",
+                            "type": "<code>Class</code>",
+                            "default": "<code>Object.class</code>",
+                            "description": "Bean type to inject. Used when name-based resolution fails."
+                        },
+                        {
+                            "id": 3,
+                            "attribute": "<code>lookup</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "JNDI lookup name. Rarely used in Spring Boot applications."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-inject-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Inject (Jakarta CDI)",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "(none)",
+                            "description": "Equivalent to <code>@Autowired(required=true)</code>. From <code>jakarta.inject.Inject</code>. Requires <code>jakarta.inject:jakarta.inject-api</code> dependency. Combine with <code>@Named</code> (CDI equivalent of <code>@Qualifier</code>) for disambiguation. Prefer <code>@Autowired</code> in Spring-only codebases."
+                        }
+                    ]
+                },
+                {
+                    "id": "bean-annotations-comparison",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "comparison",
+                    "title": "Stereotype Annotations Comparison",
+                    "columns": [
+                        {
+                            "key": "annotation",
+                            "label": "Annotation"
+                        },
+                        {
+                            "key": "layer",
+                            "label": "Layer"
+                        },
+                        {
+                            "key": "extra_behavior",
+                            "label": "Extra Behavior"
+                        },
+                        {
+                            "key": "extends",
+                            "label": "Extends"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "annotation": "<code>@Component</code>",
+                            "layer": "Any",
+                            "extra_behavior": {
+                                "value": "None",
+                                "tone": "neutral"
+                            },
+                            "extends": "—"
+                        },
+                        {
+                            "id": 2,
+                            "annotation": "<code>@Service</code>",
+                            "layer": "Service",
+                            "extra_behavior": {
+                                "value": "None (semantic only)",
+                                "tone": "neutral"
+                            },
+                            "extends": "<code>@Component</code>"
+                        },
+                        {
+                            "id": 3,
+                            "annotation": "<code>@Repository</code>",
+                            "layer": "Data access",
+                            "extra_behavior": {
+                                "value": "Exception translation",
+                                "tone": "better"
+                            },
+                            "extends": "<code>@Component</code>"
+                        },
+                        {
+                            "id": 4,
+                            "annotation": "<code>@Controller</code>",
+                            "layer": "Web (MVC)",
+                            "extra_behavior": {
+                                "value": "View resolution",
+                                "tone": "neutral"
+                            },
+                            "extends": "<code>@Component</code>"
+                        },
+                        {
+                            "id": 5,
+                            "annotation": "<code>@RestController</code>",
+                            "layer": "Web (REST)",
+                            "extra_behavior": {
+                                "value": "Auto <code>@ResponseBody</code>",
+                                "tone": "better"
+                            },
+                            "extends": "<code>@Controller</code>"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "bean-lifecycle",
+            "title": "Bean Lifecycle",
+            "description": "Phase sequence, annotation-based callbacks, interface-based callbacks, and initialization order.",
+            "blocks": [
+                {
+                    "id": "lifecycle-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Spring manages bean creation through a defined sequence of phases: instantiation, dependency injection, awareness callbacks, initialization callbacks, ready state, and destruction callbacks. Understanding this order is necessary when coordinating initialization logic across multiple beans or integrating with non-Spring lifecycle hooks.</p>"
+                },
+                {
+                    "id": "bean-lifecycle-diagram",
+                    "type": "diagram",
+                    "active": true,
+                    "title": "Bean Lifecycle Phases",
+                    "description": "PROMPT FOR DIAGRAM GENERATION:\n\nGenerate a Mermaid flowchart showing the complete Spring bean lifecycle from instantiation to destruction.\n\nUse `flowchart TD` layout.\n\nPhases in order (top to bottom):\n1. `Instantiation` — constructor called\n2. `Dependency Injection` — @Autowired fields, setters, constructor args resolved\n3. `BeanNameAware.setBeanName()` — if implemented\n4. `BeanFactoryAware.setBeanFactory()` — if implemented\n5. `ApplicationContextAware.setApplicationContext()` — if implemented\n6. `BeanPostProcessor.postProcessBeforeInitialization()` — all registered processors\n7. `@PostConstruct method` — JSR-250 init callback\n8. `InitializingBean.afterPropertiesSet()` — if implemented\n9. `@Bean(initMethod=...)` — custom init method\n10. `BeanPostProcessor.postProcessAfterInitialization()` — all registered processors\n11. `Bean is Ready` (in ApplicationContext, serving requests)\n12. `@PreDestroy method` — on context close\n13. `DisposableBean.destroy()` — if implemented\n14. `@Bean(destroyMethod=...)` — custom destroy method\n\nConnect each phase with downward arrows.\nGroup phases 6-10 in a subgraph labeled `Initialization Phase`.\nGroup phases 12-14 in a subgraph labeled `Destruction Phase`.\n\nStyle: monochrome, no color fills, rectangular nodes."
+                },
+                {
+                    "id": "lifecycle-phases-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "Lifecycle Phases",
+                    "columns": [
+                        {
+                            "key": "phase",
+                            "label": "Phase"
+                        },
+                        {
+                            "key": "mechanism",
+                            "label": "Mechanism"
+                        },
+                        {
+                            "key": "notes",
+                            "label": "Notes"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "phase": "Instantiation",
+                            "mechanism": "Constructor",
+                            "notes": "Dependencies resolved first for constructor injection."
+                        },
+                        {
+                            "id": 2,
+                            "phase": "Dependency injection",
+                            "mechanism": "<code>@Autowired</code>, setter, field",
+                            "notes": "All dependencies injected before any callback runs."
+                        },
+                        {
+                            "id": 3,
+                            "phase": "Awareness callbacks",
+                            "mechanism": "<code>*Aware</code> interfaces",
+                            "notes": "<code>BeanNameAware</code>, <code>BeanFactoryAware</code>, <code>ApplicationContextAware</code> in that order."
+                        },
+                        {
+                            "id": 4,
+                            "phase": "Pre-init processors",
+                            "mechanism": "<code>BeanPostProcessor.postProcessBeforeInitialization()</code>",
+                            "notes": "All registered <code>BeanPostProcessor</code> beans run in order. AOP proxy creation happens here."
+                        },
+                        {
+                            "id": 5,
+                            "phase": "Init callbacks",
+                            "mechanism": "<code>@PostConstruct</code> → <code>afterPropertiesSet()</code> → <code>initMethod</code>",
+                            "notes": "Three mechanisms run in this fixed order if all are present."
+                        },
+                        {
+                            "id": 6,
+                            "phase": "Post-init processors",
+                            "mechanism": "<code>BeanPostProcessor.postProcessAfterInitialization()</code>",
+                            "notes": "Final opportunity to wrap the bean — e.g. return a proxy."
+                        },
+                        {
+                            "id": 7,
+                            "phase": "Ready",
+                            "mechanism": "—",
+                            "notes": "Bean is available for injection and method calls."
+                        },
+                        {
+                            "id": 8,
+                            "phase": "Destruction callbacks",
+                            "mechanism": "<code>@PreDestroy</code> → <code>destroy()</code> → <code>destroyMethod</code>",
+                            "notes": "Triggered by <code>context.close()</code> or JVM shutdown hook."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-postconstruct-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@PostConstruct",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "(none)",
+                            "description": "Marks a method to invoke after dependency injection completes and before the bean is put into service. Must be <code>void</code>, take no parameters, and not throw checked exceptions. From <code>jakarta.annotation.PostConstruct</code>. Runs before <code>InitializingBean.afterPropertiesSet()</code>."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-postconstruct-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@PostConstruct usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\npublic class ConfigCache {\n\n    private final ConfigRepository configRepository;\n    private Map<String, String> cache;\n\n    public ConfigCache(ConfigRepository configRepository) {\n        this.configRepository = configRepository;\n    }\n\n    @PostConstruct\n    public void loadCache() {\n        // All dependencies are available at this point\n        // Runs once during context startup — not on each request\n        this.cache = configRepository.findAll().stream()\n            .collect(Collectors.toMap(Config::getKey, Config::getValue));\n    }\n\n    public String get(String key) {\n        return cache.get(key);\n    }\n}"
+                },
+                {
+                    "id": "at-predestroy-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@PreDestroy",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "(none)",
+                            "description": "Marks a method to invoke before the bean is removed from the context during shutdown. Must be <code>void</code>, take no parameters. Use to release resources: connections, thread pools, file handles, scheduled tasks. From <code>jakarta.annotation.PreDestroy</code>. Not called for prototype-scoped beans."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-predestroy-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@PreDestroy usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\npublic class KafkaConsumerManager {\n\n    private final KafkaConsumer<String, String> consumer;\n\n    public KafkaConsumerManager(KafkaProperties kafkaProperties) {\n        this.consumer = new KafkaConsumer<>(kafkaProperties.buildConsumerProperties());\n    }\n\n    @PostConstruct\n    public void startConsuming() {\n        // Start background polling thread\n    }\n\n    @PreDestroy\n    public void shutdown() {\n        // Called when context closes — before JVM exits\n        consumer.wakeup(); // interrupt blocking poll()\n        consumer.close(Duration.ofSeconds(10));\n    }\n}"
+                },
+                {
+                    "id": "initializing-bean",
+                    "type": "contentCard",
+                    "active": true,
+                    "variant": "tinted",
+                    "subheading": "InitializingBean Interface",
+                    "paragraphs": [
+                        "<p>Implement <code>InitializingBean</code> and override <code>afterPropertiesSet()</code> to run initialization logic after all properties are set. Runs after <code>@PostConstruct</code> methods, before the custom <code>initMethod</code> defined in <code>@Bean</code>. Prefer <code>@PostConstruct</code> for new code — <code>InitializingBean</code> couples the class to Spring's API.</p>"
+                    ]
+                },
+                {
+                    "id": "initializing-bean-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "InitializingBean usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\npublic class ConnectionPoolValidator implements InitializingBean {\n\n    private final DataSourceProperties properties;\n\n    public ConnectionPoolValidator(DataSourceProperties properties) {\n        this.properties = properties;\n    }\n\n    @Override\n    public void afterPropertiesSet() throws Exception {\n        // Runs after @PostConstruct, before initMethod\n        if (properties.getUrl() == null) {\n            throw new IllegalStateException(\"DataSource URL must be configured\");\n        }\n        // Attempt a test connection\n        try (Connection conn = DriverManager.getConnection(\n                properties.getUrl(),\n                properties.getUsername(),\n                properties.getPassword())) {\n            conn.isValid(2);\n        }\n    }\n}"
+                },
+                {
+                    "id": "disposable-bean",
+                    "type": "contentCard",
+                    "active": true,
+                    "variant": "outlined",
+                    "subheading": "DisposableBean Interface",
+                    "paragraphs": [
+                        "<p>Implement <code>DisposableBean</code> and override <code>destroy()</code> to run cleanup logic before the bean is removed. Runs after <code>@PreDestroy</code> methods, before the custom <code>destroyMethod</code>. Same trade-off as <code>InitializingBean</code>: couples the class to Spring. Prefer <code>@PreDestroy</code> or <code>@Bean(destroyMethod=...)</code> for third-party classes.</p>"
+                    ]
+                },
+                {
+                    "id": "disposable-bean-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "DisposableBean usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\npublic class ScheduledTaskManager implements DisposableBean {\n\n    private final ScheduledExecutorService executor =\n        Executors.newScheduledThreadPool(4);\n\n    @PostConstruct\n    public void scheduleJobs() {\n        executor.scheduleAtFixedRate(this::runHealthCheck, 0, 30, TimeUnit.SECONDS);\n    }\n\n    @Override\n    public void destroy() throws Exception {\n        // Orderly shutdown — allow in-flight tasks to finish\n        executor.shutdown();\n        if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {\n            executor.shutdownNow();\n        }\n    }\n\n    private void runHealthCheck() { ... }\n}"
+                },
+                {
+                    "id": "lifecycle-order-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "Init and Destroy Callback Order",
+                    "columns": [
+                        {
+                            "key": "order",
+                            "label": "#"
+                        },
+                        {
+                            "key": "init_callback",
+                            "label": "Initialization"
+                        },
+                        {
+                            "key": "destroy_callback",
+                            "label": "Destruction"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "order": "1",
+                            "init_callback": "<code>@PostConstruct</code> method",
+                            "destroy_callback": "<code>@PreDestroy</code> method"
+                        },
+                        {
+                            "id": 2,
+                            "order": "2",
+                            "init_callback": "<code>InitializingBean.afterPropertiesSet()</code>",
+                            "destroy_callback": "<code>DisposableBean.destroy()</code>"
+                        },
+                        {
+                            "id": 3,
+                            "order": "3",
+                            "init_callback": "<code>@Bean(initMethod=...)</code>",
+                            "destroy_callback": "<code>@Bean(destroyMethod=...)</code>"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "bean-scopes",
+            "title": "Bean Scopes",
+            "description": "Available scopes, @Scope attributes, and scope proxy mode.",
+            "blocks": [
+                {
+                    "id": "scopes-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Bean scope determines how many instances Spring creates and how long they live. Singleton is the default — one instance per <code>ApplicationContext</code>. Web-aware scopes (request, session, application) require a web-capable context. Prototype creates a new instance on every injection point or <code>getBean()</code> call — Spring does not manage its destruction.</p>"
+                },
+                {
+                    "id": "at-scope-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Scope Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code> / <code>scopeName</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"singleton\"</code>",
+                            "description": "Scope name. Built-in values: <code>singleton</code>, <code>prototype</code>, <code>request</code>, <code>session</code>, <code>application</code>, <code>websocket</code>."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>proxyMode</code>",
+                            "type": "<code>ScopedProxyMode</code>",
+                            "default": "<code>DEFAULT</code> (no proxy)",
+                            "description": "Required when injecting a short-lived scoped bean into a singleton. <code>TARGET_CLASS</code> uses CGLIB proxy; <code>INTERFACES</code> uses JDK dynamic proxy."
+                        }
+                    ]
+                },
+                {
+                    "id": "scopes-comparison-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "comparison",
+                    "title": "Scope Comparison",
+                    "columns": [
+                        {
+                            "key": "scope",
+                            "label": "Scope"
+                        },
+                        {
+                            "key": "instances",
+                            "label": "Instances"
+                        },
+                        {
+                            "key": "lifetime",
+                            "label": "Lifetime"
+                        },
+                        {
+                            "key": "destruction_managed",
+                            "label": "Destruction Managed?"
+                        },
+                        {
+                            "key": "requires_web",
+                            "label": "Requires Web?"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "scope": "<code>singleton</code>",
+                            "instances": {
+                                "value": "One per context",
+                                "tone": "neutral"
+                            },
+                            "lifetime": "Context lifetime",
+                            "destruction_managed": "Yes",
+                            "requires_web": "No"
+                        },
+                        {
+                            "id": 2,
+                            "scope": "<code>prototype</code>",
+                            "instances": {
+                                "value": "One per injection / getBean()",
+                                "tone": "neutral"
+                            },
+                            "lifetime": "Caller-managed",
+                            "destruction_managed": {
+                                "value": "No",
+                                "tone": "worse"
+                            },
+                            "requires_web": "No"
+                        },
+                        {
+                            "id": 3,
+                            "scope": "<code>request</code>",
+                            "instances": {
+                                "value": "One per HTTP request",
+                                "tone": "neutral"
+                            },
+                            "lifetime": "HTTP request",
+                            "destruction_managed": "Yes",
+                            "requires_web": {
+                                "value": "Yes",
+                                "tone": "neutral"
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "scope": "<code>session</code>",
+                            "instances": {
+                                "value": "One per HTTP session",
+                                "tone": "neutral"
+                            },
+                            "lifetime": "HTTP session",
+                            "destruction_managed": "Yes",
+                            "requires_web": {
+                                "value": "Yes",
+                                "tone": "neutral"
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "scope": "<code>application</code>",
+                            "instances": {
+                                "value": "One per ServletContext",
+                                "tone": "neutral"
+                            },
+                            "lifetime": "Application",
+                            "destruction_managed": "Yes",
+                            "requires_web": {
+                                "value": "Yes",
+                                "tone": "neutral"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "singleton-scope",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Singleton scope (default)",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Singleton is the default — @Scope annotation optional\n@Service\n@Scope(\"singleton\") // explicit, same as no annotation\npublic class CurrencyService {\n    // One instance shared across the entire application\n    // Must be stateless or use thread-safe data structures\n    private final Map<String, BigDecimal> rates = new ConcurrentHashMap<>();\n}"
+                },
+                {
+                    "id": "prototype-scope",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Prototype scope",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\n@Scope(\"prototype\")\npublic class CsvParser {\n    // New instance on every injection point / getBean() call\n    // Holds mutable state per parse operation\n    private final List<String[]> rows = new ArrayList<>();\n    private int currentLine = 0;\n\n    public List<String[]> parse(InputStream input) { ... }\n}\n\n// Prototype inside a singleton — use ObjectProvider or @Lookup\n@Service\npublic class ReportGenerator {\n\n    private final ObjectProvider<CsvParser> csvParserProvider;\n\n    public ReportGenerator(ObjectProvider<CsvParser> csvParserProvider) {\n        this.csvParserProvider = csvParserProvider;\n    }\n\n    public Report generate(InputStream input) {\n        CsvParser parser = csvParserProvider.getObject(); // new instance each call\n        return buildReport(parser.parse(input));\n    }\n}"
+                },
+                {
+                    "id": "request-scope",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Request scope",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\n@RequestScope // shorthand for @Scope(value=\"request\", proxyMode=TARGET_CLASS)\npublic class RequestContext {\n    // One instance per HTTP request\n    // Automatically destroyed when request completes\n    private String authenticatedUserId;\n    private String correlationId;\n\n    // Getters/setters\n}\n\n@Service\npublic class AuditService {\n    // RequestContext injected as scoped proxy —\n    // singleton AuditService holds a proxy that delegates to the\n    // request-scoped instance for the current thread\n    private final RequestContext requestContext;\n\n    public AuditService(RequestContext requestContext) {\n        this.requestContext = requestContext;\n    }\n}"
+                },
+                {
+                    "id": "session-scope",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Session scope",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\n@SessionScope // @Scope(value=\"session\", proxyMode=TARGET_CLASS)\npublic class ShoppingCart {\n    // One instance per HTTP session\n    // Serializable if session is distributed across nodes\n    private final List<CartItem> items = new ArrayList<>();\n\n    public void addItem(CartItem item) { items.add(item); }\n    public List<CartItem> getItems() { return Collections.unmodifiableList(items); }\n    public BigDecimal total() { return items.stream().map(CartItem::price).reduce(BigDecimal.ZERO, BigDecimal::add); }\n}"
+                },
+                {
+                    "id": "application-scope",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Application scope",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\n@ApplicationScope // @Scope(value=\"application\", proxyMode=TARGET_CLASS)\npublic class GlobalFeatureFlags {\n    // One instance per ServletContext — effectively singleton in most deployments\n    // Differs from singleton: each ServletContext gets its own instance\n    private volatile Map<String, Boolean> flags = new ConcurrentHashMap<>();\n\n    public boolean isEnabled(String feature) {\n        return flags.getOrDefault(feature, false);\n    }\n}"
+                },
+                {
+                    "id": "scope-proxy-mode",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Scope proxy mode — manual configuration",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Required when injecting request/session/prototype beans into singletons\n// Without proxy, Spring injects the scope instance captured at startup — wrong\n\n// CGLIB proxy (works for classes and interfaces)\n@Bean\n@Scope(value = \"request\", proxyMode = ScopedProxyMode.TARGET_CLASS)\npublic RequestMetadata requestMetadata() {\n    return new RequestMetadata();\n}\n\n// JDK dynamic proxy (interface only)\n@Bean\n@Scope(value = \"session\", proxyMode = ScopedProxyMode.INTERFACES)\npublic UserSession userSession() {\n    return new UserSessionImpl();\n}\n\n// How the proxy works:\n// - Singleton holds a reference to the proxy\n// - Each call on the proxy delegates to the real scoped instance\n//   for the current request/session/thread"
+                }
+            ]
+        },
+        {
+            "id": "component-scanning",
+            "title": "Component Scanning",
+            "description": "@ComponentScan configuration, include/exclude filters, and lazy initialization.",
+            "blocks": [
+                {
+                    "id": "scanning-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Component scanning discovers beans by inspecting the classpath for classes annotated with <code>@Component</code> and its specializations. <code>@SpringBootApplication</code> activates scanning from the main class's package downward. Configure <code>@ComponentScan</code> explicitly when the main class is not at the root package, or when scanning must include or exclude specific classes.</p>"
+                },
+                {
+                    "id": "scanning-diagram",
+                    "type": "diagram",
+                    "active": true,
+                    "title": "Component Scanning Process",
+                    "description": "PROMPT FOR DIAGRAM GENERATION:\n\nGenerate a Mermaid flowchart showing how Spring component scanning discovers and registers beans.\n\nUse `flowchart TD` layout.\n\nSteps:\n1. `@ComponentScan activated` (by @SpringBootApplication or explicit @ComponentScan)\n2. → `ClassPathScanningCandidateComponentProvider` scans specified base packages\n3. → For each class found:\n   - Check: `Is annotated with @Component or a stereotype?`\n   - Yes → Check `Include/Exclude filters`\n     - Passes filters → `Register bean definition` in BeanDefinitionRegistry\n     - Fails filters → `Skip class`\n   - No → `Skip class`\n4. → `BeanDefinition registered` → available for dependency resolution\n\nAdd a side note: `@Filter(ANNOTATION, value=...)` and `@Filter(ASSIGNABLE_TYPE, ...)` etc. branch off the filter step.\n\nStyle: decision diamonds for checks, rectangles for actions, monochrome."
+                },
+                {
+                    "id": "at-component-scan-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@ComponentScan Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>basePackages</code> / <code>value</code>",
+                            "type": "<code>String[]</code>",
+                            "default": "Package of annotated class",
+                            "description": "Root packages to scan. All sub-packages are included recursively."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>basePackageClasses</code>",
+                            "type": "<code>Class[]</code>",
+                            "default": "<code>{}</code>",
+                            "description": "Type-safe alternative. Spring scans the package of each specified class. Use a marker interface or class for each module."
+                        },
+                        {
+                            "id": 3,
+                            "attribute": "<code>includeFilters</code>",
+                            "type": "<code>@Filter[]</code>",
+                            "default": "<code>{}</code>",
+                            "description": "Additional filter rules to include classes not matching default stereotype detection. Requires <code>useDefaultFilters=false</code> to be meaningful as an addition."
+                        },
+                        {
+                            "id": 4,
+                            "attribute": "<code>excludeFilters</code>",
+                            "type": "<code>@Filter[]</code>",
+                            "default": "<code>{}</code>",
+                            "description": "Filter rules to exclude matching classes from registration. Applied after include filters."
+                        },
+                        {
+                            "id": 5,
+                            "attribute": "<code>useDefaultFilters</code>",
+                            "type": "<code>boolean</code>",
+                            "default": "<code>true</code>",
+                            "description": "If false, disables default detection of <code>@Component</code> and stereotypes. Combine with <code>includeFilters</code> for precise control."
+                        },
+                        {
+                            "id": 6,
+                            "attribute": "<code>lazyInit</code>",
+                            "type": "<code>boolean</code>",
+                            "default": "<code>false</code>",
+                            "description": "If true, all scanned beans are initialized lazily — on first access rather than at startup."
+                        },
+                        {
+                            "id": 7,
+                            "attribute": "<code>nameGenerator</code>",
+                            "type": "<code>Class</code>",
+                            "default": "<code>AnnotationBeanNameGenerator</code>",
+                            "description": "Strategy for generating bean names from scanned class names."
+                        }
+                    ]
+                },
+                {
+                    "id": "component-scan-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@ComponentScan configuration",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Multiple base packages — use when main class is not at root\n@Configuration\n@ComponentScan(basePackages = {\n    \"com.example.core\",\n    \"com.example.web\",\n    \"com.example.integration\"\n})\npublic class AppConfig {}\n\n// Type-safe — preferred over string-based package names\n@Configuration\n@ComponentScan(basePackageClasses = {\n    CorePackageMarker.class,     // scans com.example.core\n    WebPackageMarker.class,      // scans com.example.web\n    IntegrationPackageMarker.class\n})\npublic class TypeSafeConfig {}"
+                },
+                {
+                    "id": "include-exclude-filters",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Include and exclude filters",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Exclude @Controller classes from a non-web context\n@Configuration\n@ComponentScan(\n    basePackages = \"com.example\",\n    excludeFilters = @ComponentScan.Filter(\n        type = FilterType.ANNOTATION,\n        classes = Controller.class\n    )\n)\npublic class NonWebConfig {}\n\n// Include only classes matching a regex pattern\n@ComponentScan(\n    basePackages = \"com.example\",\n    useDefaultFilters = false,\n    includeFilters = @ComponentScan.Filter(\n        type = FilterType.REGEX,\n        pattern = \".*Repository\"\n    )\n)\npublic class RepositoryOnlyConfig {}\n\n// Exclude by assignable type\n@ComponentScan(\n    basePackages = \"com.example\",\n    excludeFilters = @ComponentScan.Filter(\n        type = FilterType.ASSIGNABLE_TYPE,\n        classes = LegacyService.class\n    )\n)\npublic class ModernConfig {}"
+                },
+                {
+                    "id": "filter-types-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "FilterType Values",
+                    "columns": [
+                        {
+                            "key": "type",
+                            "label": "FilterType"
+                        },
+                        {
+                            "key": "matches",
+                            "label": "Matches"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "type": "<code>ANNOTATION</code>",
+                            "matches": "Classes annotated with the specified annotation. Most common filter type."
+                        },
+                        {
+                            "id": 2,
+                            "type": "<code>ASSIGNABLE_TYPE</code>",
+                            "matches": "Classes that are assignable to the specified class or interface."
+                        },
+                        {
+                            "id": 3,
+                            "type": "<code>ASPECTJ</code>",
+                            "matches": "Classes matching an AspectJ type pattern expression."
+                        },
+                        {
+                            "id": 4,
+                            "type": "<code>REGEX</code>",
+                            "matches": "Classes whose fully-qualified name matches a regex pattern."
+                        },
+                        {
+                            "id": 5,
+                            "type": "<code>CUSTOM</code>",
+                            "matches": "Classes passing a custom <code>TypeFilter</code> implementation. Receives class metadata for arbitrary logic."
+                        }
+                    ]
+                },
+                {
+                    "id": "lazy-initialization",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Lazy initialization options",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Option 1: All beans lazy via application property\n// spring.main.lazy-initialization=true\n\n// Option 2: All scanned beans lazy via @ComponentScan\n@ComponentScan(basePackages = \"com.example\", lazyInit = true)\npublic class LazyConfig {}\n\n// Option 3: Specific bean lazy via @Lazy\n@Service\n@Lazy\npublic class HeavyInitializationService {\n    // Initialized on first use, not at startup\n    @PostConstruct\n    public void init() { /* expensive operation */ }\n}\n\n// Option 4: Lazy injection into eager bean\n@Service\npublic class OrderService {\n    @Lazy\n    @Autowired\n    private ReportService reportService; // proxy injected at startup; real bean created on first call\n}"
+                }
+            ]
+        },
+        {
+            "id": "conditional-annotations",
+            "title": "Conditional Annotations",
+            "description": "Full reference for all @ConditionalOn* annotations with attributes, examples, and custom conditions.",
+            "blocks": [
+                {
+                    "id": "conditional-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p><code>@Conditional</code> annotations control whether a <code>@Bean</code> or <code>@Configuration</code> class is registered based on runtime conditions evaluated during context refresh. They are the mechanism behind Spring Boot's auto-configuration — each auto-config class is guarded by one or more conditions that check classpath, existing beans, or property values.</p>"
+                },
+                {
+                    "id": "conditional-annotations-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "Conditional Annotations Overview",
+                    "columns": [
+                        {
+                            "key": "annotation",
+                            "label": "Annotation"
+                        },
+                        {
+                            "key": "activates_when",
+                            "label": "Activates When"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "annotation": "<code>@ConditionalOnClass</code>",
+                            "activates_when": "Specified class(es) present on the classpath"
+                        },
+                        {
+                            "id": 2,
+                            "annotation": "<code>@ConditionalOnMissingClass</code>",
+                            "activates_when": "Specified class(es) absent from the classpath"
+                        },
+                        {
+                            "id": 3,
+                            "annotation": "<code>@ConditionalOnBean</code>",
+                            "activates_when": "Specified bean(s) already exist in the context"
+                        },
+                        {
+                            "id": 4,
+                            "annotation": "<code>@ConditionalOnMissingBean</code>",
+                            "activates_when": "Specified bean(s) not yet registered in the context"
+                        },
+                        {
+                            "id": 5,
+                            "annotation": "<code>@ConditionalOnProperty</code>",
+                            "activates_when": "Property present and matches expected value"
+                        },
+                        {
+                            "id": 6,
+                            "annotation": "<code>@ConditionalOnResource</code>",
+                            "activates_when": "Classpath resource exists at specified path"
+                        },
+                        {
+                            "id": 7,
+                            "annotation": "<code>@ConditionalOnWebApplication</code>",
+                            "activates_when": "Running in a web application context"
+                        },
+                        {
+                            "id": 8,
+                            "annotation": "<code>@ConditionalOnNotWebApplication</code>",
+                            "activates_when": "Not running in a web application context"
+                        },
+                        {
+                            "id": 9,
+                            "annotation": "<code>@ConditionalOnExpression</code>",
+                            "activates_when": "SpEL expression evaluates to true"
+                        },
+                        {
+                            "id": 10,
+                            "annotation": "<code>@ConditionalOnJava</code>",
+                            "activates_when": "JVM is a specific Java version or range"
+                        },
+                        {
+                            "id": 11,
+                            "annotation": "<code>@ConditionalOnSingleCandidate</code>",
+                            "activates_when": "Exactly one bean of specified type exists (or one is @Primary)"
+                        },
+                        {
+                            "id": 12,
+                            "annotation": "<code>@Conditional(CustomCondition.class)</code>",
+                            "activates_when": "Custom <code>Condition</code> implementation returns true"
+                        }
+                    ]
+                },
+                {
+                    "id": "at-conditional-on-class-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@ConditionalOnClass Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>Class[]</code>",
+                            "description": "Classes that must be present. Safe to reference — if absent, the condition simply fails rather than causing a <code>ClassNotFoundException</code>."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>name</code>",
+                            "type": "<code>String[]</code>",
+                            "description": "Fully-qualified class names. Use when the class may not be on the compile classpath at all."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-conditional-on-class-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@ConditionalOnClass usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Only configure Redis cache if Lettuce (Redis client) is on classpath\n@Configuration\n@ConditionalOnClass(RedisClient.class)\npublic class RedisCacheAutoConfiguration {\n\n    @Bean\n    @ConditionalOnMissingBean(CacheManager.class)\n    public CacheManager redisCacheManager(RedisConnectionFactory factory) {\n        return RedisCacheManager.builder(factory)\n            .cacheDefaults(RedisCacheConfiguration.defaultCacheConfig()\n                .entryTtl(Duration.ofMinutes(10)))\n            .build();\n    }\n}\n\n// Use name= when the class is not available at compile time\n@ConditionalOnClass(name = \"com.oracle.jdbc.OracleDriver\")\npublic class OracleSpecificConfig { ... }"
+                },
+                {
+                    "id": "at-conditional-on-bean-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@ConditionalOnBean Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code> / <code>type</code>",
+                            "type": "<code>Class[]</code>",
+                            "description": "Bean types that must already exist in the context."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>name</code>",
+                            "type": "<code>String[]</code>",
+                            "description": "Bean names that must already exist."
+                        },
+                        {
+                            "id": 3,
+                            "attribute": "<code>annotation</code>",
+                            "type": "<code>Class[]</code>",
+                            "description": "Beans annotated with the specified annotation must exist."
+                        },
+                        {
+                            "id": 4,
+                            "attribute": "<code>search</code>",
+                            "type": "<code>SearchStrategy</code>",
+                            "description": "<code>ALL</code> (entire hierarchy), <code>CURRENT</code> (current context only), <code>ANCESTORS</code> (parent contexts only)."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-conditional-on-bean-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@ConditionalOnBean usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Configure metrics only if a MeterRegistry bean exists\n// (i.e., Micrometer is on the classpath and configured)\n@Configuration\n@ConditionalOnBean(MeterRegistry.class)\npublic class ServiceMetricsConfig {\n\n    @Bean\n    public PaymentMetrics paymentMetrics(MeterRegistry registry) {\n        return new PaymentMetrics(registry);\n    }\n\n    @Bean\n    public OrderMetrics orderMetrics(MeterRegistry registry) {\n        return new OrderMetrics(registry);\n    }\n}"
+                },
+                {
+                    "id": "at-conditional-on-property-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@ConditionalOnProperty Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>prefix</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Property key prefix. Combined with <code>name</code>: <code>prefix.name</code>."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>name</code> / <code>value</code>",
+                            "type": "<code>String[]</code>",
+                            "default": "—",
+                            "description": "Property key(s). All must match for the condition to pass."
+                        },
+                        {
+                            "id": 3,
+                            "attribute": "<code>havingValue</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Expected property value. Empty string means any non-false value passes."
+                        },
+                        {
+                            "id": 4,
+                            "attribute": "<code>matchIfMissing</code>",
+                            "type": "<code>boolean</code>",
+                            "default": "<code>false</code>",
+                            "description": "If true, condition passes when the property is absent. Useful for enabling features by default that can be explicitly disabled."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-conditional-on-property-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@ConditionalOnProperty usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Active when feature.audit.enabled=true\n// Also active when property is missing (matchIfMissing=true)\n@Configuration\n@ConditionalOnProperty(\n    prefix = \"feature.audit\",\n    name = \"enabled\",\n    havingValue = \"true\",\n    matchIfMissing = true\n)\npublic class AuditConfig {\n    @Bean\n    public AuditEventPublisher auditEventPublisher() {\n        return new AuditEventPublisher();\n    }\n}\n\n// Active only when feature.cache.type=redis\n@Configuration\n@ConditionalOnProperty(name = \"feature.cache.type\", havingValue = \"redis\")\npublic class RedisCacheConfig { ... }\n\n// Active when feature.beta=false (or absent)\n@ConditionalOnProperty(name = \"feature.beta\", havingValue = \"false\", matchIfMissing = true)\npublic class StableFeatureConfig { ... }"
+                },
+                {
+                    "id": "at-conditional-on-missing-bean",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@ConditionalOnMissingBean — override pattern",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// The most common auto-configuration pattern:\n// Register the bean only if the user hasn't defined their own\n@Configuration\npublic class PasswordEncoderAutoConfiguration {\n\n    @Bean\n    @ConditionalOnMissingBean(PasswordEncoder.class)\n    public PasswordEncoder defaultPasswordEncoder() {\n        // Default — BCrypt with strength 10\n        return new BCryptPasswordEncoder(10);\n    }\n}\n\n// User can override by defining their own:\n@Configuration\npublic class SecurityConfig {\n    @Bean\n    public PasswordEncoder customPasswordEncoder() {\n        // Argon2 — @ConditionalOnMissingBean above will NOT register BCrypt\n        return new Argon2PasswordEncoder(16, 32, 1, 65536, 10);\n    }\n}"
+                },
+                {
+                    "id": "at-conditional-on-web-application",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@ConditionalOnWebApplication",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Activate only in servlet web context\n@Configuration\n@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)\npublic class WebMvcConfig {\n    @Bean\n    public FilterRegistrationBean<RequestLoggingFilter> requestLoggingFilter() {\n        FilterRegistrationBean<RequestLoggingFilter> reg = new FilterRegistrationBean<>();\n        reg.setFilter(new RequestLoggingFilter());\n        reg.addUrlPatterns(\"/*\");\n        return reg;\n    }\n}\n\n// Activate only in reactive web context\n@Configuration\n@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)\npublic class WebFluxConfig { ... }"
+                },
+                {
+                    "id": "at-conditional-on-expression",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@ConditionalOnExpression — SpEL conditions",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Activates when both properties are set to specific values\n@Configuration\n@ConditionalOnExpression(\n    \"'${feature.mode}' == 'advanced' and ${feature.experimental:false}\"\n)\npublic class ExperimentalConfig { ... }\n\n// Combine property check with environment check\n@ConditionalOnExpression(\n    \"#{environment.getActiveProfiles().length > 0 \" +\n    \"and T(java.util.Arrays).asList(environment.getActiveProfiles()).contains('prod')}\"\n)\npublic class ProdOnlyConfig { ... }\n// Note: prefer @Profile('prod') for profile-based conditions — more readable"
+                },
+                {
+                    "id": "custom-condition",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Custom Condition implementation",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Custom condition: activate only when running on Linux\npublic class LinuxCondition implements Condition {\n\n    @Override\n    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {\n        String os = context.getEnvironment().getProperty(\"os.name\");\n        return os != null && os.toLowerCase().contains(\"linux\");\n    }\n}\n\n// Usage\n@Configuration\n@Conditional(LinuxCondition.class)\npublic class LinuxOptimizedConfig {\n    @Bean\n    public FileWatcher fileWatcher() {\n        return new InotifyFileWatcher(); // Linux-specific inotify\n    }\n}\n\n// Custom condition with annotation metadata access\npublic class FeatureFlagCondition implements Condition {\n\n    @Override\n    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {\n        Map<String, Object> attrs =\n            metadata.getAnnotationAttributes(EnableFeature.class.getName());\n        String featureName = (String) attrs.get(\"value\");\n        return context.getEnvironment()\n            .getProperty(\"feature.\" + featureName + \".enabled\", Boolean.class, false);\n    }\n}"
+                },
+                {
+                    "id": "conditional-evaluation-order",
+                    "type": "contentCard",
+                    "active": true,
+                    "variant": "outlined",
+                    "subheading": "Conditional Evaluation Order",
+                    "paragraphs": [
+                        "<p><code>@ConditionalOnMissingBean</code> and <code>@ConditionalOnBean</code> depend on what beans are already registered at the point of evaluation. Bean definition order matters: if Bean A's condition checks for Bean B, Bean B's configuration class must be processed first. Control order with <code>@AutoConfigureBefore</code> / <code>@AutoConfigureAfter</code> for auto-configurations, or <code>@DependsOn</code> for manual ordering.</p><p>Conditions are evaluated per-bean-definition during context refresh, not per-class. A single <code>@Configuration</code> class can have multiple <code>@Bean</code> methods each with different <code>@Conditional</code> annotations evaluated independently.</p>"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "application-events",
+            "title": "Application Events",
+            "description": "Built-in events, @EventListener, custom events, publishing, async, ordered, and transactional events.",
+            "blocks": [
+                {
+                    "id": "events-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>Spring's event system provides decoupled communication between beans. A publisher fires an event; registered listeners receive it. Events are synchronous by default — the publisher blocks until all listeners complete. Use <code>@Async</code> on listeners for non-blocking event handling, or <code>@TransactionalEventListener</code> to bind listener execution to transaction phases.</p>"
+                },
+                {
+                    "id": "events-flow-diagram",
+                    "type": "diagram",
+                    "active": true,
+                    "title": "Event Publishing Flow",
+                    "description": "PROMPT FOR DIAGRAM GENERATION:\n\nGenerate a Mermaid sequence diagram showing Spring application event publishing and listening.\n\nParticipants:\n- `Publisher Bean`\n- `ApplicationEventPublisher`\n- `SimpleApplicationEventMulticaster`\n- `Listener A (@EventListener)`\n- `Listener B (@Async @EventListener)`\n- `Listener C (@TransactionalEventListener)`\n\nFlow:\n1. `Publisher Bean` → `ApplicationEventPublisher.publishEvent(OrderPlacedEvent)`\n2. `ApplicationEventPublisher` → `SimpleApplicationEventMulticaster.multicastEvent()`\n3. `SimpleApplicationEventMulticaster` → `Listener A` (synchronous, blocks publisher)\n4. `SimpleApplicationEventMulticaster` → `Listener B` (async, separate thread via TaskExecutor)\n5. `SimpleApplicationEventMulticaster` → `Listener C` (deferred until AFTER_COMMIT of current transaction)\n6. `Listener A` → returns → `Publisher Bean` continues\n\nAdd note: `@Ordered or @Order determines sequence when multiple sync listeners`\n\nStyle: standard Mermaid sequence diagram, monochrome."
+                },
+                {
+                    "id": "built-in-events-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "Built-in Application Events",
+                    "columns": [
+                        {
+                            "key": "event",
+                            "label": "Event"
+                        },
+                        {
+                            "key": "fired_when",
+                            "label": "Fired When"
+                        },
+                        {
+                            "key": "context_available",
+                            "label": "Context Ready?"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "event": "<code>ApplicationStartingEvent</code>",
+                            "fired_when": "Application starts, before environment or context setup",
+                            "context_available": "No"
+                        },
+                        {
+                            "id": 2,
+                            "event": "<code>ApplicationEnvironmentPreparedEvent</code>",
+                            "fired_when": "Environment ready, context not yet created",
+                            "context_available": "No"
+                        },
+                        {
+                            "id": 3,
+                            "event": "<code>ApplicationContextInitializedEvent</code>",
+                            "fired_when": "Context created, initializers called, beans not loaded",
+                            "context_available": "Yes (empty)"
+                        },
+                        {
+                            "id": 4,
+                            "event": "<code>ApplicationPreparedEvent</code>",
+                            "fired_when": "Bean definitions loaded, context not refreshed",
+                            "context_available": "Yes (not refreshed)"
+                        },
+                        {
+                            "id": 5,
+                            "event": "<code>ContextRefreshedEvent</code>",
+                            "fired_when": "Context fully refreshed — all beans instantiated",
+                            "context_available": "Yes"
+                        },
+                        {
+                            "id": 6,
+                            "event": "<code>ApplicationStartedEvent</code>",
+                            "fired_when": "Context refreshed, before runners execute",
+                            "context_available": "Yes"
+                        },
+                        {
+                            "id": 7,
+                            "event": "<code>ApplicationReadyEvent</code>",
+                            "fired_when": "Runners complete, application ready for traffic",
+                            "context_available": "Yes"
+                        },
+                        {
+                            "id": 8,
+                            "event": "<code>ApplicationFailedEvent</code>",
+                            "fired_when": "Exception during startup",
+                            "context_available": "Partial"
+                        },
+                        {
+                            "id": 9,
+                            "event": "<code>ContextClosedEvent</code>",
+                            "fired_when": "Context is being closed",
+                            "context_available": "Yes (closing)"
+                        }
+                    ]
+                },
+                {
+                    "id": "at-event-listener-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@EventListener Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>classes</code> / <code>value</code>",
+                            "type": "<code>Class[]</code>",
+                            "default": "Inferred from method param",
+                            "description": "Event types to listen for. If empty, inferred from the method's parameter type."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>condition</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "SpEL expression. Listener only invoked when expression evaluates to true. Access event via <code>#root.event</code> or <code>#event</code>."
+                        },
+                        {
+                            "id": 3,
+                            "attribute": "<code>id</code>",
+                            "type": "<code>String</code>",
+                            "default": "<code>\"\"</code>",
+                            "description": "Identifier for the listener. Used for targeted event reply via <code>ReplyEventPublisher</code>."
+                        }
+                    ]
+                },
+                {
+                    "id": "event-listener-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@EventListener usage",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\npublic class OrderEventHandler {\n\n    private static final Logger log = LoggerFactory.getLogger(OrderEventHandler.class);\n\n    // Inferred from parameter type — listens for OrderPlacedEvent\n    @EventListener\n    public void onOrderPlaced(OrderPlacedEvent event) {\n        log.info(\"Order placed: {}\", event.getOrderId());\n    }\n\n    // SpEL condition — only process high-value orders\n    @EventListener(condition = \"#event.totalAmount > 1000\")\n    public void onHighValueOrder(OrderPlacedEvent event) {\n        notifyFraudTeam(event);\n    }\n\n    // Listen to multiple event types\n    @EventListener({OrderPlacedEvent.class, OrderUpdatedEvent.class})\n    public void onOrderChange(ApplicationEvent event) {\n        refreshOrderCache();\n    }\n}"
+                },
+                {
+                    "id": "custom-event-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Custom event definition",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Extend ApplicationEvent for pre-Spring 4.2 compatibility\npublic class OrderPlacedEvent extends ApplicationEvent {\n\n    private final Long orderId;\n    private final BigDecimal totalAmount;\n    private final String customerId;\n\n    public OrderPlacedEvent(Object source, Long orderId,\n                            BigDecimal totalAmount, String customerId) {\n        super(source);\n        this.orderId = orderId;\n        this.totalAmount = totalAmount;\n        this.customerId = customerId;\n    }\n\n    public Long getOrderId() { return orderId; }\n    public BigDecimal getTotalAmount() { return totalAmount; }\n    public String getCustomerId() { return customerId; }\n}\n\n// Spring 4.2+: any POJO can be an event — no ApplicationEvent extension needed\npublic record PaymentProcessedEvent(Long paymentId, String status, Instant processedAt) {}"
+                },
+                {
+                    "id": "publishing-events",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Publishing events",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Service\npublic class OrderService {\n\n    private final OrderRepository orderRepository;\n    private final ApplicationEventPublisher eventPublisher;\n\n    public OrderService(OrderRepository orderRepository,\n                        ApplicationEventPublisher eventPublisher) {\n        this.orderRepository = orderRepository;\n        this.eventPublisher = eventPublisher;\n    }\n\n    @Transactional\n    public Order placeOrder(OrderRequest request) {\n        Order order = orderRepository.save(new Order(request));\n\n        // Event published synchronously — all sync listeners complete before this returns\n        eventPublisher.publishEvent(\n            new OrderPlacedEvent(this, order.getId(), order.getTotal(), order.getCustomerId())\n        );\n\n        return order;\n    }\n}"
+                },
+                {
+                    "id": "async-events",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Async event listeners",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Enable async event support\n@Configuration\n@EnableAsync\npublic class AsyncConfig {\n\n    @Bean\n    public Executor applicationEventExecutor() {\n        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();\n        executor.setCorePoolSize(5);\n        executor.setMaxPoolSize(20);\n        executor.setQueueCapacity(100);\n        executor.setThreadNamePrefix(\"event-\");\n        executor.initialize();\n        return executor;\n    }\n}\n\n@Component\npublic class EmailNotificationListener {\n\n    @Async\n    @EventListener\n    public void onOrderPlaced(OrderPlacedEvent event) {\n        // Runs on event thread pool — publisher does not wait\n        emailService.sendOrderConfirmation(event.getCustomerId(), event.getOrderId());\n    }\n}"
+                },
+                {
+                    "id": "ordered-events",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Ordered event listeners",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// Multiple listeners for the same event execute in @Order sequence\n// Lower values run first\n@Component\npublic class AuditListener {\n\n    @EventListener\n    @Order(1) // runs first\n    public void audit(OrderPlacedEvent event) {\n        auditService.record(event);\n    }\n}\n\n@Component\npublic class InventoryListener {\n\n    @EventListener\n    @Order(2) // runs second\n    public void reserveInventory(OrderPlacedEvent event) {\n        inventoryService.reserve(event.getOrderId());\n    }\n}\n\n@Component\npublic class NotificationListener {\n\n    @EventListener\n    @Order(3) // runs last\n    public void notify(OrderPlacedEvent event) {\n        notificationService.send(event.getCustomerId());\n    }\n}"
+                },
+                {
+                    "id": "transaction-events",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@TransactionalEventListener",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\npublic class PostCommitEventHandler {\n\n    // Default phase: AFTER_COMMIT\n    // Runs only if the surrounding transaction commits successfully\n    // If the transaction rolls back, this listener does NOT run\n    @TransactionalEventListener\n    public void onOrderCommitted(OrderPlacedEvent event) {\n        // Safe to send email — order is persisted\n        emailService.sendConfirmation(event.getCustomerId());\n    }\n\n    // BEFORE_COMMIT — runs before commit, inside the transaction\n    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)\n    public void beforeCommit(OrderPlacedEvent event) {\n        auditService.prepareAuditEntry(event);\n    }\n\n    // AFTER_ROLLBACK — diagnostic / cleanup on failure\n    @TransactionalEventListener(phase = TransactionPhase.AFTER_ROLLBACK)\n    public void onRollback(OrderPlacedEvent event) {\n        log.warn(\"Order transaction rolled back: {}\", event.getOrderId());\n    }\n\n    // fallbackExecution=true: runs even when no active transaction\n    @TransactionalEventListener(fallbackExecution = true)\n    public void alwaysRun(OrderPlacedEvent event) {\n        metricsService.recordOrderAttempt(event);\n    }\n}"
+                }
+            ]
+        },
+        {
+            "id": "application-context",
+            "title": "ApplicationContext",
+            "description": "Context types, key methods, BeanFactory differences, and Aware interfaces.",
+            "blocks": [
+                {
+                    "id": "context-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p><code>ApplicationContext</code> is Spring's central interface for accessing the IoC container. It extends <code>BeanFactory</code> with enterprise features: event publishing, internationalization, resource loading, and application lifecycle management. Direct access to the context in application code is a code smell — prefer injecting specific beans. Access the context only when the bean type or name is not known at compile time.</p>"
+                },
+                {
+                    "id": "context-hierarchy-diagram",
+                    "type": "diagram",
+                    "active": true,
+                    "title": "ApplicationContext Type Hierarchy",
+                    "description": "PROMPT FOR DIAGRAM GENERATION:\n\nGenerate a Mermaid class diagram showing the ApplicationContext interface hierarchy.\n\nUse `classDiagram` layout.\n\nHierarchy (from most general to most specific):\n- `BeanFactory` (interface) → extended by `ApplicationContext`\n- `ApplicationContext` (interface) → extended by:\n  - `ConfigurableApplicationContext` (interface)\n    - implemented by `AbstractApplicationContext`\n      - extended by `AnnotationConfigApplicationContext` (non-web)\n      - extended by `GenericWebApplicationContext`\n        - extended by `AnnotationConfigServletWebServerApplicationContext` (Boot servlet)\n        - extended by `AnnotationConfigReactiveWebServerApplicationContext` (Boot reactive)\n\nAlso show:\n- `ApplicationContext` → implemented by `ClassPathXmlApplicationContext` (legacy)\n- `ApplicationContext` extends `MessageSource`, `ApplicationEventPublisher`, `ResourcePatternResolver`\n\nLabel each concrete class with a brief note:\n- `AnnotationConfigApplicationContext`: \"Used in non-web apps and tests\"\n- `AnnotationConfigServletWebServerApplicationContext`: \"Default in Spring Boot servlet stack\"\n- `AnnotationConfigReactiveWebServerApplicationContext`: \"Default in Spring Boot WebFlux\"\n\nStyle: standard Mermaid classDiagram notation, monochrome."
+                },
+                {
+                    "id": "context-types-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "ApplicationContext Implementations",
+                    "columns": [
+                        {
+                            "key": "type",
+                            "label": "Implementation"
+                        },
+                        {
+                            "key": "use_case",
+                            "label": "Use Case"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "type": "<code>AnnotationConfigApplicationContext</code>",
+                            "use_case": "Standalone apps, integration tests, non-web contexts. Load from <code>@Configuration</code> classes."
+                        },
+                        {
+                            "id": 2,
+                            "type": "<code>AnnotationConfigServletWebServerApplicationContext</code>",
+                            "use_case": "Default context for Spring Boot servlet (Tomcat/Jetty/Undertow) apps."
+                        },
+                        {
+                            "id": 3,
+                            "type": "<code>AnnotationConfigReactiveWebServerApplicationContext</code>",
+                            "use_case": "Default context for Spring Boot WebFlux (Reactor Netty) apps."
+                        },
+                        {
+                            "id": 4,
+                            "type": "<code>ClassPathXmlApplicationContext</code>",
+                            "use_case": "Legacy XML-based configuration. Rarely used in Boot applications."
+                        },
+                        {
+                            "id": 5,
+                            "type": "<code>GenericWebApplicationContext</code>",
+                            "use_case": "Base class for web contexts. Used in testing with <code>MockMvc</code>."
+                        }
+                    ]
+                },
+                {
+                    "id": "context-methods-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "Key ApplicationContext Methods",
+                    "columns": [
+                        {
+                            "key": "method",
+                            "label": "Method"
+                        },
+                        {
+                            "key": "returns",
+                            "label": "Returns"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "method": "<code>getBean(Class&lt;T&gt;)</code>",
+                            "returns": "<code>T</code>",
+                            "description": "Retrieves a bean by type. Throws if 0 or more than 1 match."
+                        },
+                        {
+                            "id": 2,
+                            "method": "<code>getBean(String, Class&lt;T&gt;)</code>",
+                            "returns": "<code>T</code>",
+                            "description": "Retrieves a bean by name and type."
+                        },
+                        {
+                            "id": 3,
+                            "method": "<code>getBeansOfType(Class&lt;T&gt;)</code>",
+                            "returns": "<code>Map&lt;String, T&gt;</code>",
+                            "description": "All beans of the given type: key=name, value=instance."
+                        },
+                        {
+                            "id": 4,
+                            "method": "<code>getBeanNamesForType(Class&lt;?&gt;)</code>",
+                            "returns": "<code>String[]</code>",
+                            "description": "Names of all beans assignable to the given type."
+                        },
+                        {
+                            "id": 5,
+                            "method": "<code>containsBean(String)</code>",
+                            "returns": "<code>boolean</code>",
+                            "description": "True if a bean with the given name is registered."
+                        },
+                        {
+                            "id": 6,
+                            "method": "<code>isSingleton(String)</code>",
+                            "returns": "<code>boolean</code>",
+                            "description": "True if the named bean is singleton-scoped."
+                        },
+                        {
+                            "id": 7,
+                            "method": "<code>getEnvironment()</code>",
+                            "returns": "<code>Environment</code>",
+                            "description": "Access to the unified property/profile abstraction."
+                        },
+                        {
+                            "id": 8,
+                            "method": "<code>publishEvent(Object)</code>",
+                            "returns": "<code>void</code>",
+                            "description": "Publish an application event to all registered listeners."
+                        },
+                        {
+                            "id": 9,
+                            "method": "<code>getResource(String)</code>",
+                            "returns": "<code>Resource</code>",
+                            "description": "Load a resource by location string (<code>classpath:</code>, <code>file:</code>, <code>http:</code>)."
+                        },
+                        {
+                            "id": 10,
+                            "method": "<code>getId()</code>",
+                            "returns": "<code>String</code>",
+                            "description": "Unique identifier for this context. Useful when multiple contexts exist."
+                        }
+                    ]
+                },
+                {
+                    "id": "context-usage-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "ApplicationContext programmatic access",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Component\npublic class PluginRegistry {\n\n    private final ApplicationContext context;\n\n    public PluginRegistry(ApplicationContext context) {\n        this.context = context;\n    }\n\n    // Dynamic bean resolution — type not known at compile time\n    public PaymentProcessor getProcessor(String type) {\n        String beanName = type + \"PaymentProcessor\";\n        if (!context.containsBean(beanName)) {\n            throw new IllegalArgumentException(\"No processor for type: \" + type);\n        }\n        return context.getBean(beanName, PaymentProcessor.class);\n    }\n\n    // Collect all implementations of an interface\n    public List<PaymentProcessor> getAllProcessors() {\n        return new ArrayList<>(context.getBeansOfType(PaymentProcessor.class).values());\n    }\n\n    // Load a classpath resource dynamically\n    public Properties loadConfig(String filename) throws IOException {\n        Resource resource = context.getResource(\"classpath:config/\" + filename);\n        Properties props = new Properties();\n        props.load(resource.getInputStream());\n        return props;\n    }\n}"
+                },
+                {
+                    "id": "bean-factory-vs-context",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "comparison",
+                    "title": "BeanFactory vs ApplicationContext",
+                    "columns": [
+                        {
+                            "key": "feature",
+                            "label": "Feature"
+                        },
+                        {
+                            "key": "bean_factory",
+                            "label": "BeanFactory"
+                        },
+                        {
+                            "key": "app_context",
+                            "label": "ApplicationContext"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "feature": "Bean instantiation",
+                            "bean_factory": {
+                                "value": "Lazy (on first getBean)",
+                                "tone": "neutral"
+                            },
+                            "app_context": {
+                                "value": "Eager (at refresh)",
+                                "tone": "better"
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "feature": "BeanPostProcessor auto-detection",
+                            "bean_factory": {
+                                "value": "Manual registration required",
+                                "tone": "worse"
+                            },
+                            "app_context": {
+                                "value": "Automatic",
+                                "tone": "better"
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "feature": "Event publishing",
+                            "bean_factory": {
+                                "value": "No",
+                                "tone": "worse"
+                            },
+                            "app_context": {
+                                "value": "Yes",
+                                "tone": "better"
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "feature": "i18n (MessageSource)",
+                            "bean_factory": {
+                                "value": "No",
+                                "tone": "worse"
+                            },
+                            "app_context": {
+                                "value": "Yes",
+                                "tone": "better"
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "feature": "Resource loading",
+                            "bean_factory": {
+                                "value": "Basic",
+                                "tone": "neutral"
+                            },
+                            "app_context": {
+                                "value": "Full (classpath, file, URL)",
+                                "tone": "better"
+                            }
+                        },
+                        {
+                            "id": 6,
+                            "feature": "AOP auto-proxy",
+                            "bean_factory": {
+                                "value": "Manual",
+                                "tone": "worse"
+                            },
+                            "app_context": {
+                                "value": "Automatic",
+                                "tone": "better"
+                            }
+                        },
+                        {
+                            "id": 7,
+                            "feature": "Use case",
+                            "bean_factory": {
+                                "value": "Resource-constrained environments",
+                                "tone": "neutral"
+                            },
+                            "app_context": {
+                                "value": "All production Spring applications",
+                                "tone": "better"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "context-aware-interfaces-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "*Aware Interfaces",
+                    "columns": [
+                        {
+                            "key": "interface",
+                            "label": "Interface"
+                        },
+                        {
+                            "key": "method",
+                            "label": "Method"
+                        },
+                        {
+                            "key": "provides",
+                            "label": "Provides"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "interface": "<code>ApplicationContextAware</code>",
+                            "method": "<code>setApplicationContext(ctx)</code>",
+                            "provides": "The full <code>ApplicationContext</code>. Prefer constructor injection of specific beans."
+                        },
+                        {
+                            "id": 2,
+                            "interface": "<code>BeanFactoryAware</code>",
+                            "method": "<code>setBeanFactory(factory)</code>",
+                            "provides": "<code>BeanFactory</code>. Use for low-level bean operations."
+                        },
+                        {
+                            "id": 3,
+                            "interface": "<code>BeanNameAware</code>",
+                            "method": "<code>setBeanName(name)</code>",
+                            "provides": "The name under which this bean is registered in the context."
+                        },
+                        {
+                            "id": 4,
+                            "interface": "<code>EnvironmentAware</code>",
+                            "method": "<code>setEnvironment(env)</code>",
+                            "provides": "<code>Environment</code> for property and profile access. Prefer <code>@Value</code> or <code>@ConfigurationProperties</code>."
+                        },
+                        {
+                            "id": 5,
+                            "interface": "<code>MessageSourceAware</code>",
+                            "method": "<code>setMessageSource(ms)</code>",
+                            "provides": "<code>MessageSource</code> for i18n message resolution."
+                        },
+                        {
+                            "id": 6,
+                            "interface": "<code>ApplicationEventPublisherAware</code>",
+                            "method": "<code>setApplicationEventPublisher(pub)</code>",
+                            "provides": "<code>ApplicationEventPublisher</code>. Prefer injecting it via constructor."
+                        },
+                        {
+                            "id": 7,
+                            "interface": "<code>ResourceLoaderAware</code>",
+                            "method": "<code>setResourceLoader(loader)</code>",
+                            "provides": "<code>ResourceLoader</code> for classpath and file resource access."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "aop",
+            "title": "AOP — Aspect Oriented Programming",
+            "description": "AOP concepts, advice annotations with attributes, pointcut expressions, proxy types, and ordering.",
+            "blocks": [
+                {
+                    "id": "aop-intro",
+                    "type": "typography",
+                    "active": true,
+                    "variant": "body1",
+                    "html": "<p>AOP separates cross-cutting concerns — logging, security, transaction management, caching — from business logic. Spring AOP uses proxy-based weaving: at runtime, Spring wraps the target bean in a proxy that intercepts method calls matching defined pointcuts and executes advice code around them.</p><p>Spring AOP applies only to Spring-managed beans and only to public method calls through the proxy. Direct method calls within the same class bypass the proxy and skip all advice. For intra-class method interception, use AspectJ load-time or compile-time weaving.</p>"
+                },
+                {
+                    "id": "aop-concepts-diagram",
+                    "type": "diagram",
+                    "active": true,
+                    "title": "AOP Concepts",
+                    "description": "PROMPT FOR DIAGRAM GENERATION:\n\nGenerate a Mermaid diagram showing AOP concepts and their relationships.\n\nUse `graph LR` (left-to-right) layout.\n\nNodes and relationships:\n- `Aspect` — contains → `Pointcut` and `Advice`\n- `Pointcut` — matches → `JoinPoint` (method execution on a Spring bean)\n- `Advice` — runs at → `JoinPoint` (when Pointcut matches)\n- `Advice` types (sub-nodes of Advice):\n  - `@Before` — before method execution\n  - `@After` — after method execution (always)\n  - `@AfterReturning` — after method returns normally\n  - `@AfterThrowing` — after method throws exception\n  - `@Around` — wraps the method, controls execution\n- `Weaving` — creates → `AOP Proxy`\n- `AOP Proxy` — wraps → `Target Bean`\n- `Caller` → calls `AOP Proxy` → delegates to `Target Bean`\n\nStyle: monochrome, rectangular nodes for concepts, clear directional arrows with labels."
+                },
+                {
+                    "id": "aop-terminology-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "AOP Terminology",
+                    "columns": [
+                        {
+                            "key": "term",
+                            "label": "Term"
+                        },
+                        {
+                            "key": "definition",
+                            "label": "Definition"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "term": "<strong>Aspect</strong>",
+                            "definition": "A class annotated with <code>@Aspect</code> that encapsulates a cross-cutting concern. Contains pointcuts and advice."
+                        },
+                        {
+                            "id": 2,
+                            "term": "<strong>JoinPoint</strong>",
+                            "definition": "A point in program execution where advice can be applied. In Spring AOP, always a method execution on a Spring-managed bean."
+                        },
+                        {
+                            "id": 3,
+                            "term": "<strong>Pointcut</strong>",
+                            "definition": "An expression that matches a set of JoinPoints. Defined with AspectJ expression language. Advice is bound to a pointcut."
+                        },
+                        {
+                            "id": 4,
+                            "term": "<strong>Advice</strong>",
+                            "definition": "Code executed at a JoinPoint. Types: Before, After, AfterReturning, AfterThrowing, Around."
+                        },
+                        {
+                            "id": 5,
+                            "term": "<strong>Weaving</strong>",
+                            "definition": "Linking aspects to target beans. Spring AOP weaves at runtime using proxies. AspectJ weaves at compile time or load time."
+                        },
+                        {
+                            "id": 6,
+                            "term": "<strong>Target</strong>",
+                            "definition": "The original bean being proxied. Advice is applied around calls to the target's methods."
+                        },
+                        {
+                            "id": 7,
+                            "term": "<strong>Introduction</strong>",
+                            "definition": "Declaring additional interfaces on a proxied bean without modifying the target class. Implemented via <code>@DeclareParents</code>."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-aspect-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Aspect",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "(none)",
+                            "description": "Marks a class as an AspectJ aspect. Requires <code>@EnableAspectJAutoProxy</code> on a configuration class (auto-applied by Spring Boot when <code>spring-boot-starter-aop</code> is on the classpath). The class must also be a Spring bean — annotate with <code>@Component</code> or declare with <code>@Bean</code>."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-before-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Before Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "description": "Pointcut expression or named pointcut reference. Executes before the matched method. Cannot prevent method execution (use <code>@Around</code> for that)."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>argNames</code>",
+                            "type": "<code>String</code>",
+                            "description": "Comma-separated parameter names when debug info is unavailable and parameters must be bound by name."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-before-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Before advice",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Aspect\n@Component\npublic class SecurityAspect {\n\n    @Before(\"execution(* com.example.service.*.*(..)) && @annotation(secured)\")\n    public void checkSecurity(JoinPoint joinPoint, Secured secured) {\n        // joinPoint.getArgs() — method arguments\n        // joinPoint.getSignature() — method name and declaring class\n        // joinPoint.getTarget() — the target bean instance\n        String currentUser = SecurityContextHolder.getContext()\n            .getAuthentication().getName();\n        if (!hasRequiredRole(currentUser, secured.role())) {\n            throw new AccessDeniedException(\n                \"User \" + currentUser + \" lacks role \" + secured.role());\n        }\n    }\n}"
+                },
+                {
+                    "id": "at-after-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@After / @AfterReturning / @AfterThrowing Attributes",
+                    "columns": [
+                        {
+                            "key": "annotation",
+                            "label": "Annotation"
+                        },
+                        {
+                            "key": "attribute",
+                            "label": "Key Attribute"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "annotation": "<code>@After</code>",
+                            "attribute": "<code>value</code> (pointcut)",
+                            "description": "Runs after the method exits — normal or exception. Analogous to <code>finally</code>. Cannot access return value or exception."
+                        },
+                        {
+                            "id": 2,
+                            "annotation": "<code>@AfterReturning</code>",
+                            "attribute": "<code>value</code> (pointcut), <code>returning</code> (param name)",
+                            "description": "Runs only on normal return. Bind return value via <code>returning</code> — method parameter must match the declared type."
+                        },
+                        {
+                            "id": 3,
+                            "annotation": "<code>@AfterThrowing</code>",
+                            "attribute": "<code>value</code> (pointcut), <code>throwing</code> (param name)",
+                            "description": "Runs only when the method throws. Bind the exception via <code>throwing</code>. Cannot suppress the exception — use <code>@Around</code> to catch and swallow."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-around-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Around Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "description": "Pointcut expression. The advice method must accept <code>ProceedingJoinPoint</code> as its first parameter."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>argNames</code>",
+                            "type": "<code>String</code>",
+                            "description": "Comma-separated parameter names. Needed when debug information is stripped and parameters are bound by name."
+                        }
+                    ]
+                },
+                {
+                    "id": "at-around-example",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "@Around advice — timing and retry",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Aspect\n@Component\npublic class OperationalAspect {\n\n    private static final Logger log = LoggerFactory.getLogger(OperationalAspect.class);\n\n    // Timing advice\n    @Around(\"execution(* com.example.service..*(..))\")\n    public Object measureExecutionTime(ProceedingJoinPoint pjp) throws Throwable {\n        long start = System.currentTimeMillis();\n        try {\n            Object result = pjp.proceed(); // invoke the target method\n            long elapsed = System.currentTimeMillis() - start;\n            log.info(\"{} completed in {}ms\", pjp.getSignature().getName(), elapsed);\n            return result;\n        } catch (Throwable ex) {\n            long elapsed = System.currentTimeMillis() - start;\n            log.error(\"{} failed after {}ms: {}\",\n                pjp.getSignature().getName(), elapsed, ex.getMessage());\n            throw ex; // rethrow — @Around must rethrow or handle all exceptions\n        }\n    }\n\n    // Modify return value\n    @Around(\"@annotation(cacheable)\")\n    public Object cacheResult(ProceedingJoinPoint pjp, Cacheable cacheable) throws Throwable {\n        String key = buildKey(pjp, cacheable);\n        Object cached = cacheService.get(key);\n        if (cached != null) return cached;\n        Object result = pjp.proceed();\n        cacheService.put(key, result, cacheable.ttl());\n        return result;\n    }\n}"
+                },
+                {
+                    "id": "at-pointcut-attributes-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@Pointcut Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>value</code>",
+                            "type": "<code>String</code>",
+                            "description": "AspectJ pointcut expression. The annotated method must have an empty body and <code>void</code> return type. Other advice methods reference the pointcut by method name."
+                        }
+                    ]
+                },
+                {
+                    "id": "pointcut-expressions-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "Pointcut Expression Designators",
+                    "columns": [
+                        {
+                            "key": "designator",
+                            "label": "Designator"
+                        },
+                        {
+                            "key": "matches",
+                            "label": "Matches"
+                        },
+                        {
+                            "key": "example",
+                            "label": "Example"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "designator": "<code>execution</code>",
+                            "matches": "Method execution JoinPoints. Most used.",
+                            "example": "<code>execution(* com.example.service.*.*(..))</code>"
+                        },
+                        {
+                            "id": 2,
+                            "designator": "<code>within</code>",
+                            "matches": "All methods within a type or package.",
+                            "example": "<code>within(com.example.service..*)</code>"
+                        },
+                        {
+                            "id": 3,
+                            "designator": "<code>@annotation</code>",
+                            "matches": "Methods annotated with the specified annotation.",
+                            "example": "<code>@annotation(com.example.Audited)</code>"
+                        },
+                        {
+                            "id": 4,
+                            "designator": "<code>@within</code>",
+                            "matches": "All methods in types annotated with specified annotation.",
+                            "example": "<code>@within(org.springframework.stereotype.Service)</code>"
+                        },
+                        {
+                            "id": 5,
+                            "designator": "<code>args</code>",
+                            "matches": "Methods with arguments of specified types.",
+                            "example": "<code>args(String, Long)</code>"
+                        },
+                        {
+                            "id": 6,
+                            "designator": "<code>@args</code>",
+                            "matches": "Methods whose arguments are annotated with specified annotation.",
+                            "example": "<code>@args(com.example.Validated)</code>"
+                        },
+                        {
+                            "id": 7,
+                            "designator": "<code>bean</code>",
+                            "matches": "Spring bean name or name pattern.",
+                            "example": "<code>bean(orderService)</code> or <code>bean(*Service)</code>"
+                        },
+                        {
+                            "id": 8,
+                            "designator": "<code>target</code>",
+                            "matches": "Target object is an instance of specified type.",
+                            "example": "<code>target(com.example.service.OrderService)</code>"
+                        }
+                    ]
+                },
+                {
+                    "id": "pointcut-examples",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Pointcut definitions and composition",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "@Aspect\n@Component\npublic class PointcutLibrary {\n\n    // Reusable pointcut definitions\n    @Pointcut(\"execution(* com.example.service..*(..))\")\n    public void serviceLayer() {}\n\n    @Pointcut(\"execution(* com.example.repository..*(..))\")\n    public void repositoryLayer() {}\n\n    @Pointcut(\"@annotation(org.springframework.transaction.annotation.Transactional)\")\n    public void transactionalMethod() {}\n\n    @Pointcut(\"execution(public * *(..))\")\n    public void publicMethods() {}\n\n    // Composed: public methods in service layer\n    @Pointcut(\"serviceLayer() && publicMethods()\")\n    public void publicServiceMethods() {}\n\n    // execution syntax:\n    // execution([access] returnType [class.]method(params) [throws])\n    //\n    // * com.example.service.*.*(..) =\n    //   any return type, service package (shallow), any class, any method, any args\n    //\n    // * com.example.service..*.*(..)\n    //   .. means service package AND all sub-packages\n    //\n    // execution(public String com.example.*(String, ..))\n    //   public String-returning methods in com.example, first arg String, rest any\n}"
+                },
+                {
+                    "id": "aop-proxy-types",
+                    "type": "contentCard",
+                    "active": true,
+                    "variant": "tinted",
+                    "subheading": "AOP Proxy Types",
+                    "paragraphs": [
+                        "<ul><li><strong>JDK dynamic proxy:</strong> Default when the target implements at least one interface. Creates a proxy implementing the same interfaces. The injected bean is an interface type — cast to the concrete class fails.</li><li><strong>CGLIB proxy:</strong> Used when the target does not implement any interface, or when <code>proxyTargetClass=true</code> is set. Subclasses the target class. Cannot proxy <code>final</code> classes or <code>final</code> methods. CGLIB is also used when <code>@Configuration(proxyBeanMethods=true)</code>.</li><li><strong>Self-invocation limitation:</strong> Calling a proxied method from within the same class bypasses the proxy — no advice runs. Solutions: inject the bean into itself via <code>@Autowired @Lazy private MyService self</code>, use <code>AopContext.currentProxy()</code>, or restructure to a separate bean.</li></ul>"
+                    ]
+                },
+                {
+                    "id": "at-enable-aspect-j-auto-proxy-table",
+                    "type": "basicTable",
+                    "active": true,
+                    "tableVariant": "default",
+                    "title": "@EnableAspectJAutoProxy Attributes",
+                    "columns": [
+                        {
+                            "key": "attribute",
+                            "label": "Attribute"
+                        },
+                        {
+                            "key": "type",
+                            "label": "Type"
+                        },
+                        {
+                            "key": "default",
+                            "label": "Default"
+                        },
+                        {
+                            "key": "description",
+                            "label": "Description"
+                        }
+                    ],
+                    "rows": [
+                        {
+                            "id": 1,
+                            "attribute": "<code>proxyTargetClass</code>",
+                            "type": "<code>boolean</code>",
+                            "default": "<code>false</code>",
+                            "description": "If true, forces CGLIB proxies for all beans, even those implementing interfaces. Spring Boot sets this to <code>true</code> by default."
+                        },
+                        {
+                            "id": 2,
+                            "attribute": "<code>exposeProxy</code>",
+                            "type": "<code>boolean</code>",
+                            "default": "<code>false</code>",
+                            "description": "If true, the current proxy is exposed via <code>AopContext.currentProxy()</code>. Required for self-invocation workaround. Has a thread-local overhead cost."
+                        }
+                    ]
+                },
+                {
+                    "id": "custom-annotation-aop",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Custom annotation + AOP",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// 1. Define the custom annotation\n@Target(ElementType.METHOD)\n@Retention(RetentionPolicy.RUNTIME)\npublic @interface Audited {\n    String action() default \"\";\n    boolean logArgs() default false;\n}\n\n// 2. Apply to methods\n@Service\npublic class UserService {\n\n    @Audited(action = \"CREATE_USER\", logArgs = true)\n    public User create(CreateUserRequest request) {\n        return userRepository.save(new User(request));\n    }\n\n    @Audited(action = \"DELETE_USER\")\n    public void delete(Long userId) {\n        userRepository.deleteById(userId);\n    }\n}\n\n// 3. Implement the aspect\n@Aspect\n@Component\npublic class AuditAspect {\n\n    private final AuditEventRepository auditRepo;\n\n    public AuditAspect(AuditEventRepository auditRepo) {\n        this.auditRepo = auditRepo;\n    }\n\n    @Around(\"@annotation(audited)\")\n    public Object audit(ProceedingJoinPoint pjp, Audited audited) throws Throwable {\n        String user = SecurityContextHolder.getContext().getAuthentication().getName();\n        Object[] args = audited.logArgs() ? pjp.getArgs() : new Object[0];\n        try {\n            Object result = pjp.proceed();\n            auditRepo.save(new AuditEvent(user, audited.action(), \"SUCCESS\", args));\n            return result;\n        } catch (Throwable ex) {\n            auditRepo.save(new AuditEvent(user, audited.action(), \"FAILURE\", args));\n            throw ex;\n        }\n    }\n}"
+                },
+                {
+                    "id": "aop-ordering",
+                    "type": "codeSnippet",
+                    "active": true,
+                    "filename": "Aspect ordering with @Order",
+                    "language": "java",
+                    "showLineNumbers": true,
+                    "code": "// When multiple aspects apply to the same JoinPoint,\n// @Order controls which aspect's advice runs first (outermost = lowest value)\n\n@Aspect\n@Component\n@Order(1) // Outermost — enters first, exits last\npublic class TransactionAspect {\n    @Around(\"@annotation(transactional)\")\n    public Object wrapInTransaction(ProceedingJoinPoint pjp,\n                                    Transactional transactional) throws Throwable {\n        // begin transaction\n        Object result = pjp.proceed();\n        // commit transaction\n        return result;\n    }\n}\n\n@Aspect\n@Component\n@Order(2) // Inside TransactionAspect, outside SecurityAspect\npublic class LoggingAspect {\n    @Around(\"execution(* com.example.service.*.*(..))\")\n    public Object log(ProceedingJoinPoint pjp) throws Throwable {\n        log.debug(\"Entering: {}\", pjp.getSignature());\n        Object result = pjp.proceed();\n        log.debug(\"Exiting: {}\", pjp.getSignature());\n        return result;\n    }\n}\n\n@Aspect\n@Component\n@Order(3) // Innermost — closest to target method\npublic class SecurityAspect {\n    @Before(\"execution(* com.example.service.*.*(..))\")\n    public void checkAuth(JoinPoint jp) { ... }\n}\n\n// Execution order for a matched method:\n// TransactionAspect.before → LoggingAspect.before → SecurityAspect.before\n//   → target method\n// SecurityAspect.after → LoggingAspect.after → TransactionAspect.after"
+                }
+            ]
+        }
+    ]
+}

@@ -15,6 +15,22 @@
     "contentPath": "/configs/dsa/pages/stack.json",
     "visualizationId": "stack"
   },
+  "queue": {
+    "contentPath": "/configs/dsa/pages/queue.json",
+    "visualizationId": "queue"
+  },
+  "graph": {
+    "contentPath": "/configs/dsa/pages/graph.json",
+    "visualizationId": "graph"
+  },
+  "heap": {
+    "contentPath": "/configs/dsa/pages/heap.json",
+    "visualizationId": "heap"
+  },
+  "hash-table": {
+    "contentPath": "/configs/dsa/pages/hash-table.json",
+    "visualizationId": "hash-table"
+  },
   "linked-list": {
     "contentPath": "/configs/dsa/pages/linked-list.json",
     "visualizationId": "linked-list"

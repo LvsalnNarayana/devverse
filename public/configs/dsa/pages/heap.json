@@ -1,0 +1,170 @@
+{
+    "id": "heap",
+    "kind": "data-structure",
+    "header": {
+        "backTo": "/dsa",
+        "overline": "Data Structures · Medium",
+        "title": "Heap",
+        "description": "A heap is a complete binary tree stored as a flat array where every parent satisfies an ordering property with its children. It powers priority queues — giving O(1) access to the minimum or maximum and O(log n) insert and extract."
+    },
+    "howItWorks": {
+        "title": "How heaps work",
+        "items": [
+            "A heap is stored as a level-order array — no pointers needed. Parent of index i is at ⌊(i-1)/2⌋, left child at 2i+1, right child at 2i+2. All navigation is arithmetic, not pointer chasing.",
+            "Min-heap property: every parent ≤ its children. Max-heap property: every parent ≥ its children. Only the root is guaranteed to be the global min/max — the rest are partially ordered.",
+            "Insert appends the new element at the end (O(1)) then bubbles it up by repeatedly swapping with its parent until the property is restored. At most ⌊log₂n⌋ swaps — O(log n).",
+            "Extract removes the root, moves the last element to index 0, then sifts it down by swapping with the smaller (min-heap) or larger (max-heap) child until the property is restored. O(log n).",
+            "Heapify builds a valid heap from an arbitrary array in O(n) — not O(n log n). The key insight: sift-down only internal nodes (indices 0 to ⌊n/2⌋-1) bottom-up. Leaf nodes are already trivially valid heaps.",
+            "Delete at index and Update key both run in O(log n): replace the target, then apply exactly one of bubble-up or sift-down — never both."
+        ]
+    },
+    "visualization": {
+        "id": "heap",
+        "kind": "heap",
+        "defaults": {
+            "initialHeap": [
+                1,
+                3,
+                5,
+                7,
+                9,
+                8
+            ]
+        }
+    },
+    "variants": [
+        {
+            "id": "min-heap",
+            "label": "Min-Heap",
+            "structure": "        1\n      /   \\\n    3       5\n  /   \\   /\n 7     9 8",
+            "description": "Every parent is ≤ its children. The root is always the global minimum. Used in Dijkstra's algorithm, Prim's MST, and the merge k sorted lists problem.",
+            "characteristics": [
+                "Root = global minimum — O(1) peek",
+                "Insert: append + bubble-up comparing child < parent",
+                "Extract min: remove root, move last to root, sift-down comparing parent > smaller child",
+                "Used in priority queues where lowest priority number = highest priority"
+            ],
+            "useCases": [
+                "Dijkstra's shortest path",
+                "Prim's MST",
+                "Huffman encoding",
+                "Merge k sorted lists"
+            ]
+        },
+        {
+            "id": "max-heap",
+            "label": "Max-Heap",
+            "structure": "        9\n      /   \\\n    7       8\n  /   \\   /\n 3     5 1",
+            "description": "Every parent is ≥ its children. The root is always the global maximum. Used in heap sort and top-K element problems.",
+            "characteristics": [
+                "Root = global maximum — O(1) peek",
+                "Insert: append + bubble-up comparing child > parent",
+                "Extract max: remove root, move last to root, sift-down comparing parent < larger child",
+                "Java PriorityQueue is min-heap by default — use reverseOrder() for max-heap"
+            ],
+            "useCases": [
+                "Heap sort (in-place O(n log n))",
+                "Top-K largest elements",
+                "Sliding window maximum",
+                "Median in a stream (with min-heap)"
+            ]
+        },
+        {
+            "id": "binary-vs-dheap",
+            "label": "Binary vs d-ary Heap",
+            "structure": "Binary (d=2):  parent(i) = ⌊(i-1)/2⌋\nTernary (d=3): parent(i) = ⌊(i-1)/3⌋\nd-ary:         children at d×i+1 … d×i+d",
+            "description": "A d-ary heap has d children per node instead of 2. Larger d means shallower tree (log_d n height) so insert is faster, but extract is slower because more children must be compared at each level.",
+            "characteristics": [
+                "Binary heap (d=2): insert O(log₂n), extract O(2·log₂n) — the standard choice",
+                "4-ary heap: better cache performance due to fewer levels — used in practice",
+                "Fibonacci heap: amortized O(1) decrease-key — used in advanced Dijkstra",
+                "d-ary heaps reduce memory indirection in high-performance implementations"
+            ],
+            "useCases": [
+                "4-ary heap in graph libraries (better cache)",
+                "Fibonacci heap in network routing",
+                "Pairing heap in functional languages"
+            ]
+        },
+        {
+            "id": "heapify",
+            "label": "Why Heapify is O(n)",
+            "structure": "Naive (n inserts):  O(n log n)\nHeapify (bottom-up): O(n)\n\nHeight h has ⌈n/2^(h+1)⌉ nodes.\nWork at height h = O(h).\nTotal = Σ ⌈n/2^(h+1)⌉·h = O(n).",
+            "description": "Building a heap by inserting n elements one by one costs O(n log n). Bottom-up heapify costs O(n) — a factor of log n better. The trick: most nodes are near the bottom where sift paths are short.",
+            "characteristics": [
+                "Half the nodes are leaves — zero sift-down work (already valid)",
+                "Quarter of nodes are at height 1 — at most 1 swap each",
+                "The geometric series Σ h/2^h converges to 2 — total work is 2n = O(n)",
+                "Critical for heap sort and building priority queues from bulk data"
+            ],
+            "useCases": [
+                "Bulk-loading a priority queue",
+                "Heap sort initial phase",
+                "Building median-stream heaps from existing data"
+            ]
+        }
+    ],
+    "code": {
+        "title": "Heap implementations",
+        "files": [
+            {
+                "filename": "heap.js",
+                "language": "javascript",
+                "code": "// ─── Min-Heap in JavaScript ─────────────────────────────────────────────────\n\nclass MinHeap {\n  constructor() { this.heap = []; }\n\n  // Index helpers\n  #parent(i)    { return Math.floor((i - 1) / 2); }\n  #left(i)      { return 2 * i + 1; }\n  #right(i)     { return 2 * i + 2; }\n  #swap(i, j)   { [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]]; }\n\n  // O(1) — peek minimum\n  peek()    { return this.heap[0]; }\n  size()    { return this.heap.length; }\n  isEmpty() { return this.heap.length === 0; }\n\n  // O(log n) — insert\n  insert(value) {\n    this.heap.push(value);\n    this.#bubbleUp(this.heap.length - 1);\n  }\n\n  #bubbleUp(i) {\n    while (i > 0) {\n      const p = this.#parent(i);\n      if (this.heap[p] <= this.heap[i]) break;\n      this.#swap(i, p);\n      i = p;\n    }\n  }\n\n  // O(log n) — extract minimum\n  extractMin() {\n    if (this.isEmpty()) return null;\n    const min = this.heap[0];\n    const last = this.heap.pop();\n    if (this.heap.length > 0) {\n      this.heap[0] = last;\n      this.#siftDown(0);\n    }\n    return min;\n  }\n\n  #siftDown(i) {\n    const n = this.heap.length;\n    while (true) {\n      let smallest = i;\n      const l = this.#left(i), r = this.#right(i);\n      if (l < n && this.heap[l] < this.heap[smallest]) smallest = l;\n      if (r < n && this.heap[r] < this.heap[smallest]) smallest = r;\n      if (smallest === i) break;\n      this.#swap(i, smallest);\n      i = smallest;\n    }\n  }\n\n  // O(n) — build heap from array\n  static heapify(arr) {\n    const h = new MinHeap();\n    h.heap = [...arr];\n    // Sift-down all internal nodes bottom-up\n    for (let i = Math.floor(h.heap.length / 2) - 1; i >= 0; i--)\n      h.#siftDown(i);\n    return h;\n  }\n\n  // O(log n) — delete at arbitrary index\n  deleteAt(index) {\n    const last = this.heap.pop();\n    if (index === this.heap.length) return; // deleted the last element\n    const old = this.heap[index];\n    this.heap[index] = last;\n    if (last < old) this.#bubbleUp(index);\n    else            this.#siftDown(index);\n  }\n\n  // O(log n) — update key\n  updateKey(index, newValue) {\n    const old = this.heap[index];\n    this.heap[index] = newValue;\n    if (newValue < old) this.#bubbleUp(index);\n    else                this.#siftDown(index);\n  }\n}\n\n// Usage\nconst h = MinHeap.heapify([5, 3, 8, 1, 9, 2, 7]);\nconsole.log(h.peek());       // 1\nconsole.log(h.extractMin()); // 1\nconsole.log(h.peek());       // 2\nh.insert(0);\nconsole.log(h.peek());       // 0\n"
+            },
+            {
+                "filename": "heap.py",
+                "language": "python",
+                "code": "# ─── Heap in Python ─────────────────────────────────────────────────────────\n#\n# Python's heapq module provides a min-heap on a plain list.\n# For max-heap: negate values on insert and negate back on extract.\n\nimport heapq\n\n# ── Min-heap via heapq ───────────────────────────────────────────────────────\nh = []\nheapq.heappush(h, 5)   # O(log n) insert\nheapq.heappush(h, 1)\nheapq.heappush(h, 3)\n\nprint(h[0])              # O(1) peek — always the min\nprint(heapq.heappop(h))  # O(log n) extract min → 1\n\n# O(n) heapify from existing list\narr = [5, 3, 8, 1, 9, 2, 7]\nheapq.heapify(arr)       # in-place O(n)\nprint(arr[0])            # 1\n\n# ── Max-heap — negate values ──────────────────────────────────────────────\nmax_h = []\nfor v in [5, 1, 3, 9, 2]:\n    heapq.heappush(max_h, -v)   # negate on insert\n\nmax_val = -heapq.heappop(max_h) # negate back → 9\nprint(max_val)  # 9\n\n# ── Custom priority — (priority, value) tuples ───────────────────────────\ntasks = []\nheapq.heappush(tasks, (2, 'medium task'))\nheapq.heappush(tasks, (1, 'urgent task'))\nheapq.heappush(tasks, (3, 'low priority'))\n\npriority, task = heapq.heappop(tasks)  # → (1, 'urgent task')\n\n# ── nlargest / nsmallest — O(n log k) ───────────────────────────────────\nnums = [3, 1, 4, 1, 5, 9, 2, 6]\nprint(heapq.nlargest(3, nums))   # [9, 6, 5]\nprint(heapq.nsmallest(3, nums))  # [1, 1, 2]\n\n# ── Manual min-heap class ─────────────────────────────────────────────────\nclass MinHeap:\n    def __init__(self): self.h = []\n\n    def push(self, v):   heapq.heappush(self.h, v)\n    def pop(self):       return heapq.heappop(self.h)\n    def peek(self):      return self.h[0]\n    def size(self):      return len(self.h)\n    def is_empty(self):  return len(self.h) == 0\n\n    @classmethod\n    def heapify(cls, arr):\n        obj = cls()\n        obj.h = arr[:]\n        heapq.heapify(obj.h)\n        return obj\n"
+            },
+            {
+                "filename": "Heap.java",
+                "language": "java",
+                "code": "// ─── Heap in Java ────────────────────────────────────────────────────────────\n//\n// java.util.PriorityQueue is a min-heap by default.\n// Use Collections.reverseOrder() or a custom Comparator for max-heap.\n\nimport java.util.*;\n\npublic class HeapExamples {\n    public static void main(String[] args) {\n\n        // ── Min-heap via PriorityQueue ────────────────────────────────────\n        PriorityQueue<Integer> minHeap = new PriorityQueue<>();\n        minHeap.offer(5);             // O(log n)\n        minHeap.offer(1);\n        minHeap.offer(3);\n\n        System.out.println(minHeap.peek());  // O(1) → 1\n        System.out.println(minHeap.poll());  // O(log n) → 1\n\n        // ── Max-heap ─────────────────────────────────────────────────────\n        PriorityQueue<Integer> maxHeap =\n            new PriorityQueue<>(Collections.reverseOrder());\n        maxHeap.offer(5); maxHeap.offer(9); maxHeap.offer(3);\n        System.out.println(maxHeap.peek());  // → 9\n\n        // ── Heapify from collection — O(n) ────────────────────────────────\n        List<Integer> list = Arrays.asList(5, 3, 8, 1, 9, 2, 7);\n        PriorityQueue<Integer> pq = new PriorityQueue<>(list); // O(n)\n        System.out.println(pq.peek()); // → 1\n\n        // ── Custom object with priority ───────────────────────────────────\n        PriorityQueue<int[]> tasks =\n            new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));\n        tasks.offer(new int[]{2, 0}); // [priority, id]\n        tasks.offer(new int[]{1, 1});\n        tasks.offer(new int[]{3, 2});\n        int[] top = tasks.poll();     // → [1, 1] — highest priority\n    }\n\n    // ── Manual min-heap implementation ───────────────────────────────────\n    static class MinHeap {\n        private int[] heap;\n        private int size;\n\n        MinHeap(int capacity) { heap = new int[capacity]; }\n\n        int parent(int i) { return (i - 1) / 2; }\n        int left(int i)   { return 2 * i + 1; }\n        int right(int i)  { return 2 * i + 2; }\n\n        void swap(int i, int j) { int t = heap[i]; heap[i] = heap[j]; heap[j] = t; }\n\n        void insert(int v) {\n            heap[size] = v;\n            int i = size++;\n            while (i > 0 && heap[parent(i)] > heap[i]) {\n                swap(i, parent(i));\n                i = parent(i);\n            }\n        }\n\n        int extractMin() {\n            int min = heap[0];\n            heap[0] = heap[--size];\n            siftDown(0);\n            return min;\n        }\n\n        void siftDown(int i) {\n            int smallest = i;\n            int l = left(i), r = right(i);\n            if (l < size && heap[l] < heap[smallest]) smallest = l;\n            if (r < size && heap[r] < heap[smallest]) smallest = r;\n            if (smallest != i) { swap(i, smallest); siftDown(smallest); }\n        }\n\n        int peek() { return heap[0]; }\n    }\n}\n"
+            },
+            {
+                "filename": "heap.cpp",
+                "language": "cpp",
+                "code": "// ─── Heap in C++ ─────────────────────────────────────────────────────────────\n//\n// std::priority_queue is a max-heap by default.\n// Use std::greater<T> for min-heap.\n// std::make_heap, push_heap, pop_heap operate on any random-access range.\n\n#include <queue>\n#include <vector>\n#include <algorithm>\n#include <functional>\n\nint main() {\n    // ── Max-heap (default) ────────────────────────────────────────────────\n    std::priority_queue<int> maxPQ;\n    maxPQ.push(5);            // O(log n)\n    maxPQ.push(1);\n    maxPQ.push(9);\n    int top = maxPQ.top();    // O(1) → 9\n    maxPQ.pop();              // O(log n)\n\n    // ── Min-heap ─────────────────────────────────────────────────────────\n    std::priority_queue<int,\n        std::vector<int>,\n        std::greater<int>> minPQ;\n    minPQ.push(5); minPQ.push(1); minPQ.push(9);\n    int minTop = minPQ.top(); // → 1\n\n    // ── Heapify from vector — O(n) ─────────────────────────────────────\n    std::vector<int> v = {5, 3, 8, 1, 9, 2, 7};\n    std::make_heap(v.begin(), v.end());          // max-heap, O(n)\n    // v[0] is the max (9)\n\n    std::push_heap(v.begin(), v.end());          // O(log n)\n    std::pop_heap(v.begin(), v.end());           // O(log n) — moves max to back\n    v.pop_back();                                // remove it\n\n    // ── Min-heap on vector ────────────────────────────────────────────────\n    std::make_heap(v.begin(), v.end(), std::greater<int>());\n\n    // ── Custom comparator — sort by priority field ────────────────────\n    using Task = std::pair<int,std::string>; // {priority, name}\n    std::priority_queue<Task,\n        std::vector<Task>,\n        std::greater<Task>> taskQ;\n    taskQ.push({2, \"medium\"});\n    taskQ.push({1, \"urgent\"});\n    auto [pri, name] = taskQ.top(); // → {1, \"urgent\"}\n\n    return 0;\n}\n"
+            }
+        ]
+    },
+    "footerAlerts": [
+        {
+            "severity": "success",
+            "title": "When heaps shine",
+            "items": [
+                "Priority queue — O(log n) insert/extract with O(1) peek. The canonical use case for any heap.",
+                "Top-K problems — maintain a size-K heap while scanning n elements: O(n log K) total, far better than sorting O(n log n) when K is small.",
+                "Heap sort — O(n log n) in-place, O(1) auxiliary space. Not stable but cache-friendly.",
+                "Graph algorithms — Dijkstra and Prim's MST both use a min-heap to greedily pick the closest unvisited node in O((V+E) log V)."
+            ]
+        },
+        {
+            "severity": "info",
+            "title": "Key index formulas (memorise these)",
+            "items": [
+                "Parent of i: ⌊(i-1)/2⌋",
+                "Left child of i: 2i+1",
+                "Right child of i: 2i+2",
+                "Last internal node (start of heapify): ⌊n/2⌋-1",
+                "Leaf nodes: indices ⌊n/2⌋ to n-1 — no sift-down needed"
+            ]
+        },
+        {
+            "severity": "warning",
+            "title": "Common interview pitfalls",
+            "items": [
+                "Confusing min-heap with sorted array — heap is only partially ordered. Inorder traversal does NOT produce sorted output.",
+                "Using O(n log n) repeated inserts instead of O(n) heapify when bulk-loading.",
+                "Java PriorityQueue is min-heap by default — explicitly use reverseOrder() for max-heap.",
+                "Forgetting that heap guarantees O(1) peek but O(log n) for everything else except heapify."
+            ]
+        }
+    ],
+    "hints": [
+        "For the median of a stream problem: use a max-heap for the lower half and a min-heap for the upper half — balance sizes to get O(log n) insert and O(1) median.",
+        "Heapify is O(n) — always prefer it over n individual inserts when you have all elements upfront.",
+        "Delete-at and Update-key are O(log n) each — never O(n). The trick is replacing with the last element and doing a single up or down pass."
+    ]
+}

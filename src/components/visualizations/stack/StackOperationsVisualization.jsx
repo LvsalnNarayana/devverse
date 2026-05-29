@@ -196,55 +196,55 @@ function buildTrace(op, values, parsedValue) {
 
     // ── O(n): SEARCH ─────────────────────────────────────────────────────────
     case 'search': {
+      // Intro step — explain WHY we must scan
       steps.push({
         phase: 'traverse',
-        highlightIndex: top,
+        highlightIndex: null,
         visitedIndexes: [],
         dimIndexes: [],
-        pointerLabel: `scan: ${values[top]}`,
-        codeSnippet: `i = top  // scan starts at top [${top}] = ${values[top]}`,
-        whyExplanation: `Stack search MUST start at the top and scan downward. There is no value-to-address mapping — we cannot compute which index holds ${parsedValue}. Must check each element. Starting at top [${top}].`,
-        message: `Scanning from top [${top}] = ${values[top]}. Is it ${parsedValue}? ${values[top] === parsedValue ? 'YES!' : 'No — scan downward.'}`,
+        pointerLabel: null,
+        codeSnippet: `i = top  // begin scan at top [${top}], looking for ${parsedValue}`,
+        whyExplanation: `Stack search MUST start at the top and scan downward. There is no value-to-address mapping — we cannot compute which index holds ${parsedValue}. Must check each element.`,
+        message: `Starting search for ${parsedValue} from top [${top}]. No shortcut — must scan downward.`,
       });
       const visited = [];
       let foundAt = -1;
       for (let i = top; i >= 0; i--) {
-        if (i < top) {
-          const isMatch = values[i] === parsedValue;
-          steps.push({
-            phase: isMatch ? 'found' : 'traverse',
-            highlightIndex: i,
-            visitedIndexes: [...visited],
-            dimIndexes: [],
-            pointerLabel: isMatch ? 'FOUND' : `scan: ${values[i]}`,
-            codeSnippet: isMatch
-              ? `stack[${i}] === ${parsedValue}  // match at ${addr(i)}`
-              : `stack[${i}] = ${values[i]} ≠ ${parsedValue}; i--`,
-            whyExplanation: isMatch
-              ? `Found ${parsedValue} at index ${i}, position ${top - i + 1} from top. Visited ${top - i + 1} element(s). Worst case: bottom of stack — O(n).`
-              : `stack[${i}] = ${values[i]} ≠ ${parsedValue}. No shortcut — must check the element below at ${i > 0 ? addr(i - 1) : 'bottom'}. LIFO order gives no search benefit.`,
-            message: isMatch
-              ? `stack[${i}] === ${parsedValue} — found! Position ${top - i + 1} from top.`
-              : `stack[${i}] = ${values[i]} ≠ ${parsedValue}. i-- → check [${i - 1}].`,
-          });
-          if (isMatch) {
-            foundAt = i;
-            break;
-          }
+        const isMatch = values[i] === parsedValue;
+        const posFromTop = top - i + 1;
+        steps.push({
+          phase: isMatch ? 'found' : 'traverse',
+          highlightIndex: i,
+          visitedIndexes: [...visited],
+          dimIndexes: [],
+          pointerLabel: isMatch ? 'FOUND' : `scan: ${values[i]}`,
+          codeSnippet: isMatch
+            ? `stack[${i}] === ${parsedValue}  // match at ${addr(i)}`
+            : `stack[${i}] = ${values[i]} ≠ ${parsedValue}; i--`,
+          whyExplanation: isMatch
+            ? `Found ${parsedValue} at index ${i}, position ${posFromTop} from top. Visited ${posFromTop} element(s). Worst case: bottom or absent — O(n).`
+            : `stack[${i}] = ${values[i]} ≠ ${parsedValue}. No shortcut — must check element below at ${i > 0 ? addr(i - 1) : 'bottom'}. LIFO gives no search benefit.`,
+          message: isMatch
+            ? `stack[${i}] === ${parsedValue} at ${addr(i)} — found at position ${posFromTop} from top!`
+            : `stack[${i}] = ${values[i]} ≠ ${parsedValue}. i-- → ${i > 0 ? `check [${i - 1}]` : 'end of stack'}.`,
+        });
+        if (isMatch) {
+          foundAt = i;
+          break;
         }
         visited.push(i);
-        if (i === 0 && foundAt === -1) {
-          steps.push({
-            phase: 'done',
-            highlightIndex: null,
-            visitedIndexes: Array.from({ length: n }, (_, k) => k),
-            dimIndexes: [],
-            pointerLabel: null,
-            codeSnippet: `i < 0  // exhausted stack`,
-            whyExplanation: `Scanned all ${n} elements from top to bottom — ${parsedValue} not present. O(n) worst case confirmed: every element visited.`,
-            message: `${parsedValue} not found after scanning all ${n} element(s) — O(n).`,
-          });
-        }
+      }
+      if (foundAt === -1) {
+        steps.push({
+          phase: 'done',
+          highlightIndex: null,
+          visitedIndexes: Array.from({ length: n }, (_, k) => k),
+          dimIndexes: [],
+          pointerLabel: null,
+          codeSnippet: `i < 0  // exhausted stack`,
+          whyExplanation: `Scanned all ${n} elements from top to bottom — ${parsedValue} not present. O(n) worst case confirmed: every element visited.`,
+          message: `${parsedValue} not found after scanning all ${n} element(s) — O(n).`,
+        });
       }
       break;
     }

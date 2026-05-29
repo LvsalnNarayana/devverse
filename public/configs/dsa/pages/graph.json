@@ -1,0 +1,189 @@
+{
+  "id": "graph",
+  "header": {
+    "backTo": "/dsa",
+    "overline": "Data Structures · Medium",
+    "title": "Graph",
+    "description": "A graph is a collection of vertices (nodes) connected by edges. It is the most general data structure — trees, linked lists, and grids are all special cases of graphs. Mastering graphs unlocks BFS, DFS, shortest path, and connectivity algorithms."
+  },
+  "howItWorks": {
+    "title": "How graphs work",
+    "items": [
+      "A graph G = (V, E) has a set of vertices V and a set of edges E. Each edge connects two vertices and may be directed (one-way) or undirected (bidirectional).",
+      "The adjacency list is the standard representation: a hash map where each vertex maps to a list of its neighbors. Space: O(V+E) — ideal for sparse graphs.",
+      "The adjacency matrix is an alternative: a V×V boolean grid where grid[u][v] = true means edge u→v exists. Space: O(V²) — allows O(1) edge lookup but wastes space for sparse graphs.",
+      "Add vertex and add edge are both O(1) — just append to the hash map and neighbor list. Remove vertex is O(V+E) because every other vertex's neighbor list must be checked.",
+      "Edge lookup (hasEdge) and remove edge are O(degree) in adjacency list — you must scan the neighbor list. An adjacency matrix gives O(1) edge lookup at the cost of O(V²) space.",
+      "BFS and DFS both run in O(V+E) — every vertex is processed once and every edge is examined once. This is optimal: you cannot traverse a graph faster than reading it."
+    ]
+  },
+  "visualization": {
+    "id": "graph",
+    "kind": "graph",
+    "defaults": {
+      "initialVertices": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "initialAdj": {
+        "A": [
+          "B",
+          "C"
+        ],
+        "B": [
+          "A",
+          "D"
+        ],
+        "C": [
+          "A",
+          "E"
+        ],
+        "D": [
+          "B"
+        ],
+        "E": [
+          "C"
+        ]
+      }
+    }
+  },
+  "variants": [
+    {
+      "id": "undirected",
+      "label": "Undirected Graph",
+      "structure": "A — B — D\n|       \nC — E   ",
+      "description": "Edges have no direction — A–B means both A can reach B and B can reach A. Adjacency is symmetric: if B is in A's list, A is in B's list.",
+      "characteristics": [
+        "Edge (u,v) stored in both adjList[u] and adjList[v]",
+        "Degree of a vertex = number of edges connected to it",
+        "Connected graph: every vertex reachable from any other",
+        "Used for social networks, road maps, dependency graphs"
+      ],
+      "useCases": [
+        "Social networks (mutual friends)",
+        "Road maps",
+        "Peer-to-peer networks",
+        "Collaboration graphs"
+      ]
+    },
+    {
+      "id": "directed",
+      "label": "Directed Graph (Digraph)",
+      "structure": "A → B → D\n↓         \nC → E     ",
+      "description": "Edges have direction — A→B does not imply B→A. Each vertex has an in-degree (edges coming in) and out-degree (edges going out).",
+      "characteristics": [
+        "Edge (u,v) stored only in adjList[u] — one direction only",
+        "In-degree: edges pointing TO a vertex. Out-degree: edges FROM it",
+        "DAG (Directed Acyclic Graph): directed + no cycles — enables topological sort",
+        "Used for dependency resolution, web page links, task scheduling"
+      ],
+      "useCases": [
+        "Web page links (PageRank)",
+        "Task scheduling / build systems",
+        "Twitter follows (asymmetric)",
+        "Compiler dependency graphs"
+      ]
+    },
+    {
+      "id": "weighted",
+      "label": "Weighted Graph",
+      "structure": "A —5— B —3— D\n|              \n2              \n|              \nC —7— E        ",
+      "description": "Each edge carries a numeric weight (cost, distance, capacity). Weighted graphs are the foundation of shortest path algorithms like Dijkstra and Bellman-Ford.",
+      "characteristics": [
+        "Adjacency list stores (neighbor, weight) pairs instead of just neighbor",
+        "Shortest path ≠ fewest hops — must account for edge weights",
+        "Negative weights require Bellman-Ford; non-negative use Dijkstra",
+        "Minimum spanning tree (Kruskal, Prim) finds lowest-weight connected subgraph"
+      ],
+      "useCases": [
+        "GPS navigation (road distances)",
+        "Network routing (latency)",
+        "Flight pricing",
+        "Minimum spanning tree problems"
+      ]
+    },
+    {
+      "id": "dag",
+      "label": "DAG (Directed Acyclic Graph)",
+      "structure": "A → B → D → F\n↓   ↓        \nC → E        ",
+      "description": "A directed graph with no cycles. Every DAG has at least one topological ordering — a linear sequence of vertices where every edge points forward.",
+      "characteristics": [
+        "No cycles — DFS will never revisit a vertex via back-edge",
+        "Topological sort produces a valid execution order in O(V+E)",
+        "Dynamic programming on DAGs: subproblem dependencies form a DAG",
+        "Longest path in a DAG is solvable in O(V+E) — unlike general graphs"
+      ],
+      "useCases": [
+        "Build systems (Makefile, Bazel)",
+        "Course prerequisite ordering",
+        "Package dependency managers",
+        "Blockchain transaction ordering"
+      ]
+    }
+  ],
+  "code": {
+    "title": "Graph implementations",
+    "files": [
+      {
+        "filename": "graph.js",
+        "language": "javascript",
+        "code": " // ─── Graph in JavaScript ────────────────────────────────────────────────────\n//\n// Represented as an adjacency list — a Map where each key is a vertex\n// and the value is an array of neighboring vertices.\n// O(V+E) space. Best for sparse graphs (most real-world graphs).\n\nclass Graph {\n  constructor(directed = false) {\n    this.adjList  = new Map();\n    this.directed = directed;\n    }\n    // ── O(1) — Add vertex ────────────────────────────────────────────────────\n  addVertex(v) {\n    if (!this.adjList.has(v)) this.adjList.set(v,\n        []);\n    }\n    // ── O(V+E) — Remove vertex + all edges referencing it ───────────────────\n  removeVertex(v) {\n    this.adjList.delete(v);\n    for (const [\n            , neighbors\n        ] of this.adjList) {\n      const idx = neighbors.indexOf(v);\n      if (idx !== -1) neighbors.splice(idx,\n            1);\n        }\n    }\n    // ── O(1) — Add edge ──────────────────────────────────────────────────────\n  addEdge(u, v) {\n    this.adjList.get(u)?.push(v);\n    if (!this.directed) this.adjList.get(v)?.push(u);\n    }\n    // ── O(degree) — Remove edge ──────────────────────────────────────────────\n  removeEdge(u, v) {\n    this.adjList.set(u, (this.adjList.get(u) || []).filter(n => n !== v));\n    if (!this.directed)\n      this.adjList.set(v, (this.adjList.get(v) || []).filter(n => n !== u));\n    }\n    // ── O(degree) — Check if edge exists ────────────────────────────────────\n  hasEdge(u, v) {\n    return (this.adjList.get(u) || []).includes(v);\n    }\n    // ── O(1) — Get neighbors ─────────────────────────────────────────────────\n  neighbors(v) {\n    return this.adjList.get(v) || [];\n    }\n    // ── O(V+E) — BFS from start vertex ──────────────────────────────────────\n  bfs(start) {\n    const visited = new Set([start\n        ]);\n    const queue   = [start\n        ];\n    const order   = [];\n\n    while (queue.length) {\n      const curr = queue.shift(); // O(1) amortized with proper queue\n      order.push(curr);\n      for (const neighbor of this.neighbors(curr)) {\n        if (!visited.has(neighbor)) {\n          visited.add(neighbor);\n          queue.push(neighbor);\n                }\n            }\n        }\n    return order; // level-by-level traversal\n    }\n    // ── O(V+E) — DFS from start vertex (iterative) ──────────────────────────\n  dfs(start) {\n    const visited = new Set();\n    const stack   = [start\n        ];\n    const order   = [];\n\n    while (stack.length) {\n      const curr = stack.pop();\n      if (visited.has(curr)) continue;\n      visited.add(curr);\n      order.push(curr);\n      // Push neighbors in reverse so left-to-right processing order\n      for (const neighbor of [...this.neighbors(curr)\n            ].reverse()) {\n        if (!visited.has(neighbor)) stack.push(neighbor);\n            }\n        }\n    return order;\n    }\n}\n// ── Usage ─────────────────────────────────────────────────────────────────\nconst g = new Graph(false); // undirected\n['A','B','C','D','E'\n].forEach(v => g.addVertex(v));\ng.addEdge('A','B'); g.addEdge('A','C');\ng.addEdge('B','D'); g.addEdge('C','E');\n\nconsole.log(g.bfs('A')); // ['A','B','C','D','E']\nconsole.log(g.dfs('A')); // ['A','B','D','C','E']\nconsole.log(g.hasEdge('A','B')); // true\nconsole.log(g.neighbors('A')); // ['B','C']\n"
+      },
+      {
+        "filename": "graph.py",
+        "language": "python",
+        "code": "# ─── Graph in Python ────────────────────────────────────────────────────────\n#\n# Python's dict (hash map) is the natural adjacency list container.\n# collections.defaultdict(list) auto-creates empty lists for new keys.\n\nfrom collections import defaultdict, deque\n\nclass Graph:\n    def __init__(self, directed=False):\n        self.adj      = defaultdict(list)\n        self.directed = directed\n        self.vertices = set()\n\n    # ── O(1) — Add vertex ────────────────────────────────────────────────\n    def add_vertex(self, v):\n        self.vertices.add(v)\n        _ = self.adj[v\n]   # ensure key exists\n\n    # ── O(V+E) — Remove vertex + all edges referencing it ───────────────\n    def remove_vertex(self, v):\n        self.vertices.discard(v)\n        del self.adj[v\n]\n        for neighbors in self.adj.values():\n            if v in neighbors:\n                neighbors.remove(v)\n\n    # ── O(1) — Add edge ──────────────────────────────────────────────────\n    def add_edge(self, u, v):\n        self.adj[u\n].append(v)\n        if not self.directed:\n            self.adj[v\n].append(u)\n\n    # ── O(degree) — Remove edge ──────────────────────────────────────────\n    def remove_edge(self, u, v):\n        self.adj[u\n] = [n for n in self.adj[u\n    ] if n != v\n]\n        if not self.directed:\n            self.adj[v\n] = [n for n in self.adj[v\n    ] if n != u\n]\n\n    # ── O(degree) — Check if edge exists ────────────────────────────────\n    def has_edge(self, u, v):\n        return v in self.adj[u\n]\n\n    # ── O(1) — Get neighbors ─────────────────────────────────────────────\n    def neighbors(self, v):\n        return self.adj[v\n]\n\n    # ── O(V+E) — BFS ────────────────────────────────────────────────────\n    def bfs(self, start):\n        visited = {start\n}\n        queue   = deque([start\n])   # deque for O(1) popleft\n        order   = []\n        while queue:\n            curr = queue.popleft()\n            order.append(curr)\n            for neighbor in self.adj[curr\n]:\n                if neighbor not in visited:\n                    visited.add(neighbor)\n                    queue.append(neighbor)\n        return order\n\n    # ── O(V+E) — DFS (recursive) ────────────────────────────────────────\n    def dfs(self, start, visited=None):\n        if visited is None: visited = set()\n        visited.add(start)\n        order = [start\n]\n        for neighbor in self.adj[start\n]:\n            if neighbor not in visited:\n                order.extend(self.dfs(neighbor, visited))\n        return order\n\n# Usage\ng = Graph(directed=False)\nfor v in ['A','B','C','D','E'\n]: g.add_vertex(v)\ng.add_edge('A','B'); g.add_edge('A','C')\ng.add_edge('B','D'); g.add_edge('C','E')\n\nprint(g.bfs('A'))        # ['A','B','C','D','E'\n]\nprint(g.dfs('A'))        # ['A','B','D','C','E'\n]\nprint(g.has_edge('A','B'))  # True\nprint(g.neighbors('A'))     # ['B','C'\n]\n"
+      },
+      {
+        "filename": "Graph.java",
+        "language": "java",
+        "code": " // ─── Graph in Java ──────────────────────────────────────────────────────────\n//\n// Adjacency list via HashMap<String, List<String>>.\n// For weighted graphs, use HashMap<String, List<int[]>> where int[] = {neighbor, weight}.\n\nimport java.util.*;\n\npublic class Graph {\n    private final Map<String, List<String>> adjList = new HashMap<>();\n    private final boolean directed;\n\n    public Graph(boolean directed) { this.directed = directed;\n    }\n    // ── O(1) — Add vertex ────────────────────────────────────────────────\n    public void addVertex(String v) {\n        adjList.putIfAbsent(v, new ArrayList<>());\n    }\n    // ── O(V+E) — Remove vertex + all edges ──────────────────────────────\n    public void removeVertex(String v) {\n        adjList.remove(v);\n        for (List<String> neighbors : adjList.values())\n            neighbors.remove(v);\n    }\n    // ── O(1) amortized — Add edge ─────────────────────────────────────────\n    public void addEdge(String u, String v) {\n        adjList.getOrDefault(u, Collections.emptyList()).add(v);\n        if (!directed) adjList.getOrDefault(v, Collections.emptyList()).add(u);\n    }\n    // ── O(degree) — Remove edge ──────────────────────────────────────────\n    public void removeEdge(String u, String v) {\n        adjList.getOrDefault(u, Collections.emptyList()).remove(v);\n        if (!directed) adjList.getOrDefault(v, Collections.emptyList()).remove(u);\n    }\n    // ── O(degree) — Has edge ─────────────────────────────────────────────\n    public boolean hasEdge(String u, String v) {\n        return adjList.getOrDefault(u, Collections.emptyList()).contains(v);\n    }\n    // ── O(1) — Get neighbors ──────────────────────────────────────────────\n    public List<String> neighbors(String v) {\n        return adjList.getOrDefault(v, Collections.emptyList());\n    }\n    // ── O(V+E) — BFS ──────────────────────────────────────────────────────\n    public List<String> bfs(String start) {\n        Set<String>    visited = new HashSet<>(Set.of(start));\n        Queue<String>  queue   = new LinkedList<>(List.of(start));\n        List<String>   order   = new ArrayList<>();\n\n        while (!queue.isEmpty()) {\n            String curr = queue.poll();\n            order.add(curr);\n            for (String neighbor : neighbors(curr)) {\n                if (visited.add(neighbor)) // add returns true if not present\n                    queue.offer(neighbor);\n            }\n        }\n        return order;\n    }\n    // ── O(V+E) — DFS (iterative) ─────────────────────────────────────────\n    public List<String> dfs(String start) {\n        Set<String>    visited = new HashSet<>();\n        Deque<String>  stack   = new ArrayDeque<>(List.of(start));\n        List<String>   order   = new ArrayList<>();\n\n        while (!stack.isEmpty()) {\n            String curr = stack.pop();\n            if (visited.contains(curr)) continue;\n            visited.add(curr);\n            order.add(curr);\n            List<String> nbrs = new ArrayList<>(neighbors(curr));\n            Collections.reverse(nbrs);\n            for (String n : nbrs) if (!visited.contains(n)) stack.push(n);\n        }\n        return order;\n    }\n}\n"
+      },
+      {
+        "filename": "graph.cpp",
+        "language": "cpp",
+        "code": " // ─── Graph in C++ ───────────────────────────────────────────────────────────\n//\n// Adjacency list via unordered_map<string, vector<string>>.\n// For weighted: unordered_map<string, vector<pair<string,int>>>.\n\n#include <unordered_map>\n#include <vector>\n#include <string>\n#include <queue>\n#include <stack>\n#include <unordered_set>\n#include <algorithm>\n\nclass Graph {\n    std::unordered_map<std::string, std::vector<std::string>> adj;\n    bool directed;\n\npublic:\n    Graph(bool directed = false) : directed(directed) {}\n    // ── O(1) — Add vertex ────────────────────────────────────────────────\n    void addVertex(const std::string& v) {\n        adj.emplace(v, std::vector<std::string>{});\n    }\n    // ── O(V+E) — Remove vertex + all edges ──────────────────────────────\n    void removeVertex(const std::string& v) {\n        adj.erase(v);\n        for (auto& [key, neighbors\n        ] : adj) {\n            neighbors.erase(std::remove(neighbors.begin(), neighbors.end(), v), neighbors.end());\n        }\n    }\n    // ── O(1) amortized — Add edge ─────────────────────────────────────────\n    void addEdge(const std::string& u, const std::string& v) {\n        adj[u\n        ].push_back(v);\n        if (!directed) adj[v\n        ].push_back(u);\n    }\n    // ── O(degree) — Remove edge ──────────────────────────────────────────\n    void removeEdge(const std::string& u, const std::string& v) {\n        auto& nu = adj[u\n        ];\n        nu.erase(std::remove(nu.begin(), nu.end(), v), nu.end());\n        if (!directed) {\n            auto& nv = adj[v\n            ];\n            nv.erase(std::remove(nv.begin(), nv.end(), u), nv.end());\n        }\n    }\n    // ── O(degree) — Has edge ─────────────────────────────────────────────\n    bool hasEdge(const std::string& u, const std::string& v) const {\n        auto it = adj.find(u);\n        if (it == adj.end()) return false;\n        return std::find(it->second.begin(), it->second.end(), v) != it->second.end();\n    }\n    // ── O(1) — Get neighbors ──────────────────────────────────────────────\n    const std::vector<std::string>& neighbors(const std::string& v) const {\n        return adj.at(v);\n    }\n    // ── O(V+E) — BFS ──────────────────────────────────────────────────────\n    std::vector<std::string> bfs(const std::string& start) const {\n        std::unordered_set<std::string> visited = {start\n        };\n        std::queue<std::string>         q;\n        std::vector<std::string>        order;\n        q.push(start);\n        while (!q.empty()) {\n            auto curr = q.front(); q.pop();\n            order.push_back(curr);\n            for (const auto& n : adj.at(curr))\n                if (visited.insert(n).second) q.push(n);\n        }\n        return order;\n    }\n    // ── O(V+E) — DFS (iterative) ─────────────────────────────────────────\n    std::vector<std::string> dfs(const std::string& start) const {\n        std::unordered_set<std::string> visited;\n        std::stack<std::string>         s;\n        std::vector<std::string>        order;\n        s.push(start);\n        while (!s.empty()) {\n            auto curr = s.top(); s.pop();\n            if (visited.count(curr)) continue;\n            visited.insert(curr);\n            order.push_back(curr);\n            const auto& nbrs = adj.at(curr);\n            for (auto it = nbrs.rbegin(); it != nbrs.rend(); ++it)\n                if (!visited.count(*it)) s.push(*it);\n        }\n        return order;\n    }\n};\n"
+      }
+    ]
+  },
+  "footerAlerts": [
+    {
+      "severity": "info",
+      "title": "Adjacency list vs adjacency matrix",
+      "items": [
+        "Adjacency list — O(V+E) space. Add vertex O(1), add edge O(1), hasEdge O(degree), getNeighbors O(1). Best for sparse graphs (most real-world graphs).",
+        "Adjacency matrix — O(V²) space. HasEdge O(1), but add/remove vertex requires resizing the entire matrix. Best when V is small and the graph is dense.",
+        "Rule of thumb: if E << V², use adjacency list. If E ≈ V² (dense graph), matrix is acceptable.",
+        "For weighted graphs: adjacency list stores (neighbor, weight) pairs; matrix stores weights directly with ∞ for no edge."
+      ]
+    },
+    {
+      "severity": "success",
+      "title": "When graphs shine",
+      "items": [
+        "Shortest path — BFS for unweighted, Dijkstra for non-negative weights, Bellman-Ford for negative weights.",
+        "Connectivity — BFS/DFS to find connected components, detect cycles, check bipartiteness.",
+        "Dependency ordering — topological sort on a DAG gives a valid task execution order.",
+        "Network flow — model capacity constraints as edge weights (Ford-Fulkerson, Edmonds-Karp)."
+      ]
+    },
+    {
+      "severity": "warning",
+      "title": "Common interview pitfalls",
+      "items": [
+        "Forgetting visited set in BFS/DFS — causes infinite loops in cyclic graphs.",
+        "Using adjacency matrix when V is large — O(V²) space kills memory for 10⁵ vertices.",
+        "Assuming undirected when the problem implies directed — always clarify edge direction.",
+        "Off-by-one in edge count — undirected edges are stored twice, so edge count = sum(degrees) / 2."
+      ]
+    }
+  ],
+  "hints": [
+    "Always start graph problems by clarifying: directed or undirected? Weighted or unweighted? Cyclic or DAG?",
+    "BFS = shortest path in unweighted graph. DFS = connectivity, cycle detection, topological sort.",
+    "For disconnected graphs, wrap BFS/DFS in an outer loop over all vertices."
+  ]
+}

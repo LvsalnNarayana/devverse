@@ -16,6 +16,7 @@ export const RICH_HTML_SX = {
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
     bgcolor: 'action.hover',
     wordBreak: 'break-word',
+    color:"#D22B2B"
   },
   '& a': {
     color: 'primary.main',

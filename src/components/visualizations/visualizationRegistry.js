@@ -55,17 +55,18 @@ export const VISUALIZATION_LOADERS = {
 
   stack: () => import('./stack/StackOperationsVisualization.jsx').then((m) => m.default),
 
-  // queue: () => import('./queue/QueueOperationsVisualization.jsx').then((m) => m.default),
+  queue: () => import('./queue/QueueOperationsVisualization.jsx').then((m) => m.default),
 
   // 'binary-tree': () => import('./tree/TreeVisualization.jsx').then((m) => m.default),
 
   // 'binary-search-tree': () => import('./bst/BSTVisualization.jsx').then((m) => m.default),
 
-  // heap: () => import('./heap/HeapVisualization.jsx').then((m) => m.default),
+  heap: () => import('./heap/HeapOperationsVisualization.jsx').then((m) => m.default),
 
-  // 'hash-table': () => import('./hashTable/HashTableVisualization.jsx').then((m) => m.default),
+  'hash-table': () =>
+    import('./hashTable/HashTableOperationsVisualization.jsx').then((m) => m.default),
 
-  // graph: () => import('./graph/GraphVisualization.jsx').then((m) => m.default),
+  graph: () => import('./graph/GraphOperationsVisualization.jsx').then((m) => m.default),
 
   // trie: () => import('./trie/TrieVisualization.jsx').then((m) => m.default),
 

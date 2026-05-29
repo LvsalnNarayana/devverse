@@ -204,55 +204,54 @@ function buildTrace(op, arr, parsedIndex, parsedValue) {
 
     // ── O(n): FIND ───────────────────────────────────────────────────────────
     case 'find': {
+      // Intro step — explain WHY we can't use the address formula
       steps.push({
         phase: 'traverse',
-        highlightIndex: 0,
+        highlightIndex: null,
         visitedIndexes: [],
         shiftRange: null,
-        pointerLabel: 'i=0',
-        codeSnippet: `i = 0; arr[0] = ${arr[0]} at ${addr(0)}`,
-        whyExplanation: `No index known for value ${parsedValue}. Even though addresses are contiguous, we have no formula to compute WHICH index holds this value — must check each one. Starting at [0].`,
-        message: `arr[0] = ${arr[0]} — is it ${parsedValue}? ${arr[0] === parsedValue ? 'YES!' : 'No. Advance i.'}`,
+        pointerLabel: null,
+        codeSnippet: `i = 0  // begin scan, looking for value ${parsedValue}`,
+        whyExplanation: `No index known for value ${parsedValue}. Even though addresses are contiguous, we have no formula to compute WHICH index holds this value — must check each one.`,
+        message: `Starting scan for ${parsedValue}. Contiguous memory helps Get/Update but not Find — we don't know the index.`,
       });
       const visited = [];
       let foundAt = -1;
       for (let i = 0; i < n; i++) {
-        if (i > 0) {
-          const isMatch = arr[i] === parsedValue;
-          steps.push({
-            phase: isMatch ? 'found' : 'traverse',
-            highlightIndex: i,
-            visitedIndexes: [...visited],
-            shiftRange: null,
-            pointerLabel: isMatch ? 'FOUND' : `i=${i}`,
-            codeSnippet: isMatch
-              ? `arr[${i}] === ${parsedValue}  // match at ${addr(i)}`
-              : `arr[${i}] = ${arr[i]} ≠ ${parsedValue}; i++`,
-            whyExplanation: isMatch
-              ? `Found ${parsedValue} at index ${i} (${addr(i)}) after ${i + 1} comparison(s). Worst case: value at last index or absent — O(n) comparisons.`
-              : `arr[${i}] = ${arr[i]} ≠ ${parsedValue}. Must check next element at ${addr(i + 1)}. No shortcut exists without a hash or sorted order.`,
-            message: isMatch
-              ? `arr[${i}] === ${parsedValue} at ${addr(i)} — found after ${i + 1} comparison(s)!`
-              : `arr[${i}] = ${arr[i]} ≠ ${parsedValue}. i++ → check [${i + 1}].`,
-          });
-          if (isMatch) {
-            foundAt = i;
-            break;
-          }
+        const isMatch = arr[i] === parsedValue;
+        steps.push({
+          phase: isMatch ? 'found' : 'traverse',
+          highlightIndex: i,
+          visitedIndexes: [...visited],
+          shiftRange: null,
+          pointerLabel: isMatch ? 'FOUND' : `i=${i}`,
+          codeSnippet: isMatch
+            ? `arr[${i}] === ${parsedValue}  // match at ${addr(i)}`
+            : `arr[${i}] = ${arr[i]} ≠ ${parsedValue}; i++`,
+          whyExplanation: isMatch
+            ? `Found ${parsedValue} at index ${i} (${addr(i)}) after ${i + 1} comparison(s). Worst case: value at last index or absent — O(n) comparisons.`
+            : `arr[${i}] = ${arr[i]} ≠ ${parsedValue}. Must check next element at ${addr(i + 1)}. No shortcut exists without a hash or sorted order.`,
+          message: isMatch
+            ? `arr[${i}] === ${parsedValue} at ${addr(i)} — found after ${i + 1} comparison(s)!`
+            : `arr[${i}] = ${arr[i]} ≠ ${parsedValue}. i++ → ${i + 1 < n ? `check [${i + 1}]` : 'end of array'}.`,
+        });
+        if (isMatch) {
+          foundAt = i;
+          break;
         }
         visited.push(i);
-        if (i === n - 1 && foundAt === -1) {
-          steps.push({
-            phase: 'done',
-            highlightIndex: null,
-            visitedIndexes: Array.from({ length: n }, (_, k) => k),
-            shiftRange: null,
-            pointerLabel: null,
-            codeSnippet: `i === n  // exhausted array`,
-            whyExplanation: `Checked all ${n} elements — ${parsedValue} not present. This is O(n) worst case: every element visited before confirming absence.`,
-            message: `${parsedValue} not found after checking all ${n} elements — O(n) worst case.`,
-          });
-        }
+      }
+      if (foundAt === -1) {
+        steps.push({
+          phase: 'done',
+          highlightIndex: null,
+          visitedIndexes: Array.from({ length: n }, (_, k) => k),
+          shiftRange: null,
+          pointerLabel: null,
+          codeSnippet: `i === n  // exhausted array`,
+          whyExplanation: `Checked all ${n} elements — ${parsedValue} not present. This is O(n) worst case: every element visited before confirming absence.`,
+          message: `${parsedValue} not found after checking all ${n} elements — O(n) worst case.`,
+        });
       }
       break;
     }

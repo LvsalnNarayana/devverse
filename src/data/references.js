@@ -286,7 +286,7 @@ const referenceCatalog = [
     href: internal('spring-boot-core'),
     active: true,
     pageStructure: '/pageStructures/references/springBoot/springBootCore.md',
-    content: '',
+    content: '/configs/references/spring-boot-core.json',
   },
   {
     id: 'spring-boot-web',

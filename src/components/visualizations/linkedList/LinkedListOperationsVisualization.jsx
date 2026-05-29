@@ -487,52 +487,51 @@ function buildTrace(op, list, parsedIndex, parsedValue, addresses) {
 
     // ── O(n): SEARCH ──────────────────────────────────────────────────────
     case 'search': {
+      // Intro step — explain WHY we must traverse
       steps.push({
-        currIndex: 0,
+        currIndex: null,
         visitedIndexes: [],
-        highlightIndex: 0,
+        highlightIndex: null,
         phase: 'traverse',
         pointerVar: 'curr',
-        codeSnippet: 'curr = head',
-        whyExplanation: `Searching for value ${parsedValue}. Linked list has no hash, no index, no sorted order to exploit — must check every node. Starting at head (${addresses[0]}).`,
+        codeSnippet: `curr = head  // begin scan, looking for ${parsedValue}`,
+        whyExplanation: `Searching for value ${parsedValue}. Linked list has no hash, no index, no sorted order to exploit — must check every node from head.`,
         relinkFrom: null,
         relinkTo: null,
-        message: `curr = head  →  node[0] = ${list[0]?.value}. Is this ${parsedValue}? ${list[0]?.value === parsedValue ? 'YES!' : 'No — keep scanning.'}`,
+        message: `Starting search for ${parsedValue}. No shortcut — must follow .next from head.`,
       });
       const visited = [];
       let foundIdx = -1;
       for (let i = 0; i < n; i++) {
-        if (i > 0) {
-          const isMatch = list[i].value === parsedValue;
-          steps.push({
-            currIndex: i,
-            visitedIndexes: [...visited],
-            highlightIndex: i,
-            phase: isMatch ? 'found' : 'traverse',
-            pointerVar: isMatch ? 'curr (FOUND)' : 'curr',
-            codeSnippet: isMatch
-              ? `curr.value === ${parsedValue}  // match!`
-              : `curr.value !== ${parsedValue}; curr = curr.next`,
-            whyExplanation: isMatch
-              ? `Found at node[${i}] after ${i + 1} comparisons. In worst case (not found) we'd check all ${n}. That's O(n).`
-              : `curr.value = ${list[i].value} ≠ ${parsedValue}. Must follow .next to ${i + 1 < n ? addresses[i + 1] : 'null'}. No way to skip — no hash, no sort order.`,
-            relinkFrom: null,
-            relinkTo: null,
-            message: isMatch
-              ? `curr.value === ${parsedValue}  →  FOUND at node[${i}] after ${i + 1} comparisons!`
-              : `node[${i}].value = ${list[i].value} ≠ ${parsedValue}. curr = curr.next (${i + 1 < n ? addresses[i + 1] : 'null'}).`,
-          });
-          if (isMatch) {
-            foundIdx = i;
-            break;
-          }
+        const isMatch = list[i].value === parsedValue;
+        steps.push({
+          currIndex: i,
+          visitedIndexes: [...visited],
+          highlightIndex: i,
+          phase: isMatch ? 'found' : 'traverse',
+          pointerVar: isMatch ? 'curr (FOUND)' : 'curr',
+          codeSnippet: isMatch
+            ? `curr.value === ${parsedValue}  // match at node[${i}]!`
+            : `curr.value = ${list[i].value} ≠ ${parsedValue}; curr = curr.next`,
+          whyExplanation: isMatch
+            ? `Found at node[${i}] after ${i + 1} comparison(s). In worst case (not found) we'd check all ${n}. That's O(n).`
+            : `curr.value = ${list[i].value} ≠ ${parsedValue}. Must follow .next to ${i + 1 < n ? addresses[i + 1] : 'null'}. No way to skip — no hash, no sort order.`,
+          relinkFrom: null,
+          relinkTo: null,
+          message: isMatch
+            ? `curr.value === ${parsedValue}  →  FOUND at node[${i}] after ${i + 1} comparison(s)!`
+            : `node[${i}].value = ${list[i].value} ≠ ${parsedValue}. curr = curr.next (${i + 1 < n ? addresses[i + 1] : 'null'}).`,
+        });
+        if (isMatch) {
+          foundIdx = i;
+          break;
         }
         visited.push(i);
       }
       if (foundIdx === -1) {
         steps.push({
           currIndex: null,
-          visitedIndexes: Array.from({ length: n }, (_, i) => i),
+          visitedIndexes: Array.from({ length: n }, (_, k) => k),
           highlightIndex: null,
           phase: 'done',
           pointerVar: 'curr',
@@ -546,7 +545,6 @@ function buildTrace(op, list, parsedIndex, parsedValue, addresses) {
       break;
     }
 
-    // ── O(n): GET ─────────────────────────────────────────────────────────
     case 'get': {
       steps.push({
         currIndex: 0,

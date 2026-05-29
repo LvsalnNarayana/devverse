@@ -1,0 +1,158 @@
+{
+  "id": "queue",
+  "header": {
+    "backTo": "/dsa",
+    "overline": "Data Structures · Easy",
+    "title": "Queue",
+    "description": "A queue stores elements in First-In-First-Out (FIFO) order — elements are enqueued at the rear and dequeued from the front. Front and rear pointers give O(1) access to both ends, making all core operations constant time."
+  },
+  "howItWorks": {
+    "title": "How queues work",
+    "items": [
+      "A queue maintains two pointers: front (the next element to dequeue) and rear (where the next enqueue goes). Both operations are O(1) — no scanning, no shifting.",
+      "Enqueue writes the new element at rear+1 and advances the rear pointer. Dequeue reads from front and advances the front pointer. Neither operation touches any other element.",
+      "In a naive array implementation, dequeueing leaves a gap at the front — unused space grows over time. A circular buffer solves this by wrapping the front and rear pointers using modulo arithmetic.",
+      "A priority queue breaks FIFO order — elements leave based on a priority key, not arrival time. It is implemented as a heap, making enqueue and dequeue O(log n) instead of O(1).",
+      "A deque (double-ended queue) allows enqueue and dequeue at both ends in O(1) — it generalises both stacks and queues.",
+      "Because queues process elements in arrival order, they are the natural data structure for BFS, task scheduling, and any system where fairness (first come, first served) matters."
+    ]
+  },
+  "visualization": {
+    "id": "queue",
+    "kind": "queue",
+    "defaults": {
+      "initialValues": [
+        10,
+        20,
+        30
+      ]
+    }
+  },
+  "variants": [
+    {
+      "id": "simple",
+      "label": "Simple Queue (FIFO)",
+      "structure": "DEQUEUE ← [FRONT: 10] [20] [30] [REAR: 40] ← ENQUEUE",
+      "description": "The foundational queue — elements enter at the rear and leave from the front in strict arrival order. All core operations are O(1) with front and rear pointers.",
+      "characteristics": [
+        "FIFO guarantee — first enqueued is always first dequeued",
+        "O(1) enqueue and dequeue — no shifting, just pointer advances",
+        "Naive array impl wastes front space — circular buffer fixes this",
+        "Linked list impl: O(1) with head (front) and tail (rear) pointers"
+      ],
+      "useCases": [
+        "BFS graph traversal",
+        "OS process scheduling",
+        "Print spooler",
+        "Message buffers"
+      ]
+    },
+    {
+      "id": "circular",
+      "label": "Circular Queue (Ring Buffer)",
+      "structure": "[0: 10] [1: 20] [2: 30] [3:∅] → rear=(rear+1)%cap wraps to 0",
+      "description": "A fixed-size queue where the rear pointer wraps around to the front of the array using modulo arithmetic. Reuses freed slots — no wasted memory and no array copying.",
+      "characteristics": [
+        "Fixed capacity — full when (rear+1) % cap === front",
+        "rear = (rear+1) % cap and front = (front+1) % cap on each op",
+        "Eliminates the wasted-space problem of naive array queues",
+        "Used in OS ring buffers, network packet buffers, audio streaming"
+      ],
+      "useCases": [
+        "Network packet buffers",
+        "Audio/video streaming",
+        "CPU scheduling rings",
+        "Keyboard input buffer"
+      ]
+    },
+    {
+      "id": "deque",
+      "label": "Deque (Double-Ended Queue)",
+      "structure": "pushFront → [FRONT: 10] [20] [30] [REAR: 40] ← pushRear\npopFront  ←                              → popRear",
+      "description": "Generalises both stack and queue — elements can be added or removed from either end in O(1). Implemented as a doubly linked list or circular buffer.",
+      "characteristics": [
+        "O(1) at both ends — pushFront, pushRear, popFront, popRear",
+        "Implements stack (use one end) and queue (use both ends)",
+        "Python collections.deque, Java ArrayDeque, C++ std::deque",
+        "Sliding window maximum algorithm uses a monotonic deque"
+      ],
+      "useCases": [
+        "Sliding window algorithms",
+        "Palindrome checking",
+        "Browser history (back + forward)",
+        "Undo/redo with bounded history"
+      ]
+    },
+    {
+      "id": "priority",
+      "label": "Priority Queue (Heap-backed)",
+      "structure": "enqueue(val, priority) → heap insert O(log n)\ndequeue() → always removes min/max priority element",
+      "description": "Elements leave in priority order, not arrival order. Backed by a min-heap or max-heap — enqueue and dequeue are O(log n), peek is O(1).",
+      "characteristics": [
+        "Dequeue always returns highest-priority (min or max) element",
+        "O(log n) enqueue/dequeue — heap property maintained via sift-up/down",
+        "O(1) peek — top of heap is always the priority extremum",
+        "Build from n elements in O(n) via heapify — faster than n inserts"
+      ],
+      "useCases": [
+        "Dijkstra's shortest path",
+        "A* pathfinding",
+        "Task schedulers (CPU, OS)",
+        "Top-K elements problems",
+        "Huffman encoding"
+      ]
+    }
+  ],
+  "code": {
+    "title": "Queue implementations",
+    "files": [
+      {
+        "filename": "queue.js",
+        "language": "javascript",
+        "code": " // ─── Queue in JavaScript ────────────────────────────────────────────────────\n//\n// JavaScript has no built-in queue. Arrays can simulate one but shift() is O(n)\n// (shifts every element left). A proper O(1) queue uses a doubly linked list\n// or a circular buffer. collections.deque equivalent: use two stacks or a\n// custom class below.\n// ── Simple queue using a singly linked list (O(1) enqueue + dequeue) ─────\nclass Node {\n  constructor(value) { this.value = value; this.next = null;\n    }\n}\n\nclass Queue {\n  constructor() {\n    this.head = null; // front — dequeue here\n    this.tail = null; // rear  — enqueue here\n    this.size = 0;\n    }\n    // O(1) — Enqueue (add to rear)\n  enqueue(value) {\n    const node = new Node(value);\n    if (!this.tail) { this.head = this.tail = node;\n        }\n    else { this.tail.next = node; this.tail = node;\n        }\n    this.size++;\n    }\n    // O(1) — Dequeue (remove from front)\n  dequeue() {\n    if (!this.head) throw new Error('Queue underflow');\n    const val = this.head.value;\n    this.head = this.head.next;\n    if (!this.head) this.tail = null;\n    this.size--;\n    return val;\n    }\n    // O(1) — Peek front\n  peek()    { if (!this.head) throw new Error('Empty'); return this.head.value;\n    }\n  isEmpty() { return this.size === 0;\n    }\n}\n// ── Circular buffer queue (fixed capacity, O(1) all ops) ─────────────────\nclass CircularQueue {\n  constructor(capacity) {\n    this.buf  = new Array(capacity);\n    this.cap  = capacity;\n    this.front = 0;\n    this.rear  = -1;\n    this.count = 0;\n    }\n\n  enqueue(value) {\n    if (this.count === this.cap) throw new Error('Queue full');\n    this.rear = (this.rear + 1) % this.cap; // wrap around\n    this.buf[this.rear\n        ] = value;\n    this.count++;\n    }\n\n  dequeue() {\n    if (this.count === 0) throw new Error('Queue empty');\n    const val = this.buf[this.front\n        ];\n    this.front = (this.front + 1) % this.cap; // wrap around\n    this.count--;\n    return val;\n    }\n\n  peek()    { return this.buf[this.front\n        ];\n    }\n  isEmpty() { return this.count === 0;\n    }\n  isFull()  { return this.count === this.cap;\n    }\n}\n// ── Priority queue using a min-heap ──────────────────────────────────────\nclass MinHeapPQ {\n  constructor() { this.heap = [];\n    }\n\n  enqueue(value, priority) {\n    this.heap.push({ value, priority\n        });\n    this._bubbleUp(this.heap.length - 1);\n    }\n\n  dequeue() {\n    if (!this.heap.length) throw new Error('Empty');\n    const min = this.heap[\n            0\n        ];\n    const last = this.heap.pop();\n    if (this.heap.length) { this.heap[\n                0\n            ] = last; this._sinkDown(0);\n        }\n    return min.value;\n    }\n\n  _bubbleUp(i) {\n    while (i > 0) {\n      const p = Math.floor((i - 1) / 2);\n      if (this.heap[p\n            ].priority <= this.heap[i\n            ].priority) break;\n      [this.heap[p\n                ], this.heap[i\n                ]\n            ] = [this.heap[i\n                ], this.heap[p\n                ]\n            ];\n      i = p;\n        }\n    }\n\n  _sinkDown(i) {\n    const n = this.heap.length;\n    while (true) {\n      let min = i;\n      const l = 2 * i + 1, r = 2 * i + 2;\n      if (l < n && this.heap[l\n            ].priority < this.heap[min\n            ].priority) min = l;\n      if (r < n && this.heap[r\n            ].priority < this.heap[min\n            ].priority) min = r;\n      if (min === i) break;\n      [this.heap[min\n                ], this.heap[i\n                ]\n            ] = [this.heap[i\n                ], this.heap[min\n                ]\n            ];\n      i = min;\n        }\n    }\n}\n"
+      },
+      {
+        "filename": "queue.py",
+        "language": "python",
+        "code": "# ─── Queue in Python ────────────────────────────────────────────────────────\n#\n# collections.deque is a doubly-linked list — O(1) append and popleft.\n# Use it directly for queues and deques.\n# queue.Queue is thread-safe with blocking for producer-consumer patterns.\n# heapq gives a min-priority queue.\n\nfrom collections import deque\nimport heapq\n\n# ── Simple queue (FIFO) ──────────────────────────────────────────────────\nq = deque()\nq.append(10)       # O(1) enqueue at rear\nq.append(20)\nq.append(30)\nfront = q.popleft()   # O(1) dequeue from front → 10\npeek  = q[\n    0\n]          # O(1) peek front → 20\nempty = len(q) == 0   # O(1) isEmpty\n\n# ── Deque (double-ended) ─────────────────────────────────────────────────\ndq = deque()\ndq.append(10)         # add to right (rear)\ndq.appendleft(5)      # add to left (front)\ndq.pop()              # remove from right\ndq.popleft()          # remove from left\n\n# ── Circular buffer (fixed capacity) ─────────────────────────────────────\nclass CircularQueue:\n    def __init__(self, capacity):\n        self.buf   = [None\n] * capacity\n        self.cap   = capacity\n        self.front = 0\n        self.rear  = -1\n        self.count = 0\n\n    def enqueue(self, value):\n        if self.count == self.cap: raise OverflowError('Full')\n        self.rear = (self.rear + 1) % self.cap   # wrap around\n        self.buf[self.rear\n] = value\n        self.count += 1\n\n    def dequeue(self):\n        if self.count == 0: raise IndexError('Empty')\n        val = self.buf[self.front\n]\n        self.front = (self.front + 1) % self.cap  # wrap around\n        self.count -= 1\n        return val\n\n    def peek(self):    return self.buf[self.front\n]\n    def is_empty(self):return self.count == 0\n    def is_full(self): return self.count == self.cap\n\n# ── Priority queue using heapq (min-heap) ────────────────────────────────\npq = []\nheapq.heappush(pq, (1, 'high priority'))   # (priority, value)\nheapq.heappush(pq, (3, 'low priority'))\nheapq.heappush(pq, (2, 'medium priority'))\npriority, value = heapq.heappop(pq)        # → (1, 'high priority')\n"
+      },
+      {
+        "filename": "Queue.java",
+        "language": "java",
+        "code": " // ─── Queue in Java ──────────────────────────────────────────────────────────\n//\n// java.util.Queue is an interface. Key implementations:\n//   LinkedList     — O(1) offer/poll, general purpose\n//   ArrayDeque     — O(1) amortized, faster than LinkedList in practice\n//   PriorityQueue  — O(log n) offer/poll, heap-backed\n//   ArrayBlockingQueue — thread-safe, bounded, for producer-consumer\n\nimport java.util.*;\n\npublic class QueueExamples {\n    public static void main(String[] args) {\n        // ── Simple queue (FIFO) via ArrayDeque ───────────────────────────\n        Queue<Integer> queue = new ArrayDeque<>();\n        queue.offer(10); // O(1) enqueue — returns false if full\n        queue.offer(20);\n        queue.offer(30);\n        int front = queue.peek(); // O(1) peek — null if empty\n        int val   = queue.poll(); // O(1) dequeue — null if empty\n        boolean empty = queue.isEmpty(); // O(1)\n\n        // ── Deque (double-ended) ─────────────────────────────────────────\n        Deque<Integer> deque = new ArrayDeque<>();\n        deque.offerFirst(5); // add to front\n        deque.offerLast(10); // add to rear\n        deque.pollFirst(); // remove from front\n        deque.pollLast(); // remove from rear\n\n        // ── Priority queue (min-heap) ─────────────────────────────────────\n        PriorityQueue<Integer> pq = new PriorityQueue<>();\n        pq.offer(30); // O(log n)\n        pq.offer(10);\n        pq.offer(20);\n        int min = pq.poll(); // O(log n) → 10 (min element)\n\n        // Max-heap using reverseOrder\n        PriorityQueue<Integer> maxPQ = new PriorityQueue<>(Collections.reverseOrder());\n        maxPQ.offer(30); maxPQ.offer(10); maxPQ.offer(20);\n        int max = maxPQ.poll(); // → 30\n\n        // ── BFS pattern (most common queue use-case) ──────────────────────\n        // Queue<Node> bfsQueue = new ArrayDeque<>();\n        // bfsQueue.offer(root);\n        // while (!bfsQueue.isEmpty()) {\n        //     Node curr = bfsQueue.poll();\n        //     if (curr.left  != null) bfsQueue.offer(curr.left);\n        //     if (curr.right != null) bfsQueue.offer(curr.right);\n        // }\n    }\n}\n"
+      },
+      {
+        "filename": "queue.cpp",
+        "language": "cpp",
+        "code": " // ─── Queue in C++ ───────────────────────────────────────────────────────────\n//\n// std::queue       — FIFO adapter over deque, O(1) push/pop\n// std::deque       — double-ended, O(1) push/pop both ends\n// std::priority_queue — max-heap by default, O(log n) push/pop\n// boost::lockfree::queue — lock-free for concurrent use\n\n#include <queue>\n#include <deque>\n#include <functional> // std::greater\n\nint main() {\n    // ── Simple queue (FIFO) ───────────────────────────────────────────────\n    std::queue<int> q;\n    q.push(10); // O(1) enqueue\n    q.push(20);\n    q.push(30);\n    int front = q.front(); // O(1) peek\n    q.pop(); // O(1) dequeue (no return value — call front() first)\n    bool empty = q.empty(); // O(1)\n    int  sz    = q.size(); // O(1)\n\n    // ── Deque (double-ended) ──────────────────────────────────────────────\n    std::deque<int> dq;\n    dq.push_front(5); // O(1) add to front\n    dq.push_back(10); // O(1) add to rear\n    dq.pop_front(); // O(1) remove from front\n    dq.pop_back(); // O(1) remove from rear\n\n    // ── Priority queue — max-heap (default) ──────────────────────────────\n    std::priority_queue<int> maxPQ;\n    maxPQ.push(30); maxPQ.push(10); maxPQ.push(20);\n    int top = maxPQ.top(); // 30 — O(1) peek\n    maxPQ.pop(); // O(log n)\n\n    // ── Priority queue — min-heap ─────────────────────────────────────────\n    std::priority_queue<int, std::vector<int>, std::greater<int>> minPQ;\n    minPQ.push(30); minPQ.push(10); minPQ.push(20);\n    int minTop = minPQ.top(); // 10\n\n    return 0;\n}\n"
+      }
+    ]
+  },
+  "footerAlerts": [
+    {
+      "severity": "success",
+      "title": "When queues shine",
+      "items": [
+        "BFS traversal — a queue gives natural level-by-level expansion, guaranteeing shortest path in unweighted graphs.",
+        "Producer-consumer systems — queues decouple producers and consumers, letting each run at its own pace.",
+        "Fair scheduling — FIFO ensures no task is starved; every request is served in arrival order.",
+        "Sliding window — a deque (monotonic queue) solves maximum/minimum in a sliding window in O(n)."
+      ]
+    },
+    {
+      "severity": "warning",
+      "title": "When to consider alternatives",
+      "items": [
+        "Priority ordering needed → use a priority queue (heap-backed, O(log n) ops).",
+        "Random access by index → use an array or deque with indexing.",
+        "Last-in first-out needed → use a stack instead.",
+        "Thread-safe concurrent access → use BlockingQueue (Java) or asyncio.Queue (Python)."
+      ]
+    }
+  ],
+  "hints": [
+    "Always clarify whether a circular buffer or linked list is expected — the interviewer may want the space-efficient version.",
+    "For BFS: queue.offer(root) → while (!queue.isEmpty()) { node = queue.poll(); process; enqueue children }.",
+    "Priority queue edge cases: ties in priority (use insertion order as tiebreaker), empty dequeue, single-element heap."
+  ]
+}

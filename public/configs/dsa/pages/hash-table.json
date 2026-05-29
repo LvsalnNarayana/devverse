@@ -1,0 +1,178 @@
+{
+    "id": "hash-table",
+    "kind": "data-structure",
+    "header": {
+        "backTo": "/dsa",
+        "overline": "Data Structures · Medium",
+        "title": "Hash Table",
+        "description": "A hash table maps keys to values using a hash function that converts any key into an array index. It achieves O(1) average-case insert, search, and delete — the most efficient lookup structure for unsorted data."
+    },
+    "howItWorks": {
+        "title": "How hash tables work",
+        "items": [
+            "A hash function transforms a key into an integer index: hash(key) % capacity. A good hash function distributes keys uniformly so each bucket receives approximately n/capacity keys.",
+            "Collisions are inevitable — by the pigeonhole principle, if you insert more keys than buckets, two keys must share a bucket. The collision resolution strategy determines how the table handles this.",
+            "Separate chaining stores a linked list in each bucket. Collisions append to the list. Lookup scans the list linearly — O(chain length) = O(load factor) on average.",
+            "Open addressing stores all entries directly in the array. On collision, it probes for the next available slot. Linear probing checks (hash + 1) % n, (hash + 2) % n, etc.",
+            "Load factor = entries / capacity. As it approaches 1, chains grow longer or probe sequences lengthen and performance degrades to O(n). Tables resize (rehash) when load exceeds a threshold — typically 0.75 for chaining, 0.7 for probing.",
+            "Resize doubles the capacity and rehashes every entry into the new array — O(n) work. But since it happens every O(n) inserts, the amortized cost per insert stays O(1)."
+        ]
+    },
+    "visualization": {
+        "id": "hash-table",
+        "kind": "hash-table",
+        "defaults": {}
+    },
+    "variants": [
+        {
+            "id": "separate-chaining",
+            "label": "Separate Chaining",
+            "structure": "[0] → null\n[1] → {name:Alice} → {nav:Bob} → null\n[2] → {age:30} → null\n[3] → null",
+            "description": "Each bucket holds a linked list of all entries that hash to it. Collisions grow the list. The table never becomes full — chains can grow unbounded, but performance degrades with high load.",
+            "characteristics": [
+                "Load factor can exceed 1.0 — no hard capacity limit",
+                "Simple deletion — splice the node from the chain",
+                "Cache-unfriendly — linked list nodes scattered in memory",
+                "Java HashMap and Python dict use variants of chaining"
+            ],
+            "useCases": [
+                "Java HashMap",
+                "Python dict (hash table + open addressing hybrid)",
+                "General-purpose key-value store",
+                "When delete frequency is high"
+            ]
+        },
+        {
+            "id": "open-addressing-linear",
+            "label": "Open Addressing — Linear Probing",
+            "structure": "[0] A:1  [1] ∅  [2] B:2  [3] C:3  [4] ∅\nOn collision at [2]: probe [3], [4]...",
+            "description": "All entries live in the flat array. On collision, probe forward: (hash + i) % capacity. Better cache locality than chaining but suffers from primary clustering — runs of occupied slots form and grow.",
+            "characteristics": [
+                "All data in one contiguous array — cache friendly",
+                "Load factor must stay below ~0.7 to avoid long probe chains",
+                "Deletion requires tombstones — setting to null would break probe sequences",
+                "Primary clustering: nearby collisions cluster together, worsening future probes"
+            ],
+            "useCases": [
+                "C++ unordered_map internals",
+                "CPython dict (uses pseudo-random probing)",
+                "Database hash indexes",
+                "When memory locality is critical"
+            ]
+        },
+        {
+            "id": "open-addressing-quadratic",
+            "label": "Open Addressing — Quadratic Probing",
+            "structure": "Probe sequence: (hash + 1²) % n, (hash + 2²) % n, (hash + 3²) % n...",
+            "description": "Same as linear probing but probe offset grows quadratically. Reduces primary clustering — nearby keys no longer compete for the same probe sequence. Secondary clustering still possible.",
+            "characteristics": [
+                "Probe: (hash + i²) % capacity for i = 0, 1, 2...",
+                "Eliminates primary clustering — different initial positions get different sequences",
+                "Secondary clustering: keys with same hash still share the full probe sequence",
+                "Only guaranteed to find an empty slot if capacity is prime and load < 0.5"
+            ],
+            "useCases": [
+                "Variant of open addressing for reduced clustering",
+                "Hash tables where primary clustering is observed in practice"
+            ]
+        },
+        {
+            "id": "double-hashing",
+            "label": "Double Hashing",
+            "structure": "probe(i) = (hash1(key) + i × hash2(key)) % capacity\nhash2 must never return 0",
+            "description": "Uses a second hash function to determine the probe step size. Each key gets its own unique probe sequence — eliminates both primary and secondary clustering. Best open addressing strategy in practice.",
+            "characteristics": [
+                "Probe: (h1(key) + i × h2(key)) % capacity",
+                "h2 must be coprime with capacity — use h2(k) = p - (k % p) where p is prime < capacity",
+                "Eliminates clustering — each key has a unique probe sequence",
+                "Harder to implement correctly but superior performance at high load"
+            ],
+            "useCases": [
+                "High-performance hash tables",
+                "Database systems",
+                "When open addressing is required but linear probing clusters too much"
+            ]
+        },
+        {
+            "id": "robin-hood",
+            "label": "Robin Hood Hashing",
+            "structure": "On collision, steal slot from the key with shorter probe distance.\nResult: all probe distances are more uniform.",
+            "description": "A variation of linear probing where on collision, the inserting key evicts the key with the shorter probe distance ('stealing from the rich'). Result: variance in probe lengths is minimized — lookup is faster in practice.",
+            "characteristics": [
+                "Insert: steal slots from entries with shorter probe distances",
+                "Result: max probe distance is bounded — very uniform distribution",
+                "Deletion: backward-shift deletion avoids tombstones",
+                "Used in Rust HashMap (hashbrown) and modern high-performance tables"
+            ],
+            "useCases": [
+                "Rust std::collections::HashMap (hashbrown)",
+                "High-performance systems requiring predictable lookup time",
+                "Cache-efficient hash tables"
+            ]
+        }
+    ],
+    "code": {
+        "title": "Hash table implementations",
+        "files": [
+            {
+                "filename": "hashTable.js",
+                "language": "javascript",
+                "code": "// ─── Hash Table in JavaScript ────────────────────────────────────────────────\n//\n// JavaScript's Map object is a hash table with O(1) avg operations.\n// Keys can be any type (objects, primitives) — unlike plain objects.\n// Below: built-in Map, then a manual separate-chaining implementation.\n\n// ── Built-in Map ──────────────────────────────────────────────────────────\nconst map = new Map();\nmap.set('name', 'Alice');     // O(1) insert\nmap.set('age', 30);           // O(1) insert\nmap.get('name');              // O(1) → 'Alice'\nmap.has('age');               // O(1) → true\nmap.delete('age');            // O(1)\nmap.size;                     // O(1) → 1\n\n// Iteration is insertion-order guaranteed (unlike object keys)\nfor (const [key, value] of map) {\n  console.log(key, value);\n}\n\n// ── Manual separate chaining hash table ──────────────────────────────────\nclass HashMap {\n  constructor(capacity = 16) {\n    this.capacity = capacity;\n    this.buckets  = Array.from({ length: capacity }, () => []);\n    this.size     = 0;\n    this.LOAD_THRESHOLD = 0.75;\n  }\n\n  // Hash function: polynomial rolling hash\n  #hash(key) {\n    const s = String(key);\n    let h = 0;\n    for (let i = 0; i < s.length; i++)\n      h = (h * 31 + s.charCodeAt(i)) % this.capacity;\n    return h;\n  }\n\n  // O(1) avg — Insert or update\n  set(key, value) {\n    const idx   = this.#hash(key);\n    const chain = this.buckets[idx];\n    const entry = chain.find(e => e.key === key);\n    if (entry) { entry.value = value; return; }  // update\n    chain.push({ key, value });                   // insert\n    this.size++;\n    if (this.size / this.capacity > this.LOAD_THRESHOLD) this.#resize();\n  }\n\n  // O(1) avg — Get value\n  get(key) {\n    const idx   = this.#hash(key);\n    const entry = this.buckets[idx].find(e => e.key === key);\n    return entry?.value ?? undefined;\n  }\n\n  // O(1) avg — Check existence\n  has(key) {\n    const idx = this.#hash(key);\n    return this.buckets[idx].some(e => e.key === key);\n  }\n\n  // O(1) avg — Delete\n  delete(key) {\n    const idx     = this.#hash(key);\n    const chain   = this.buckets[idx];\n    const entryIdx = chain.findIndex(e => e.key === key);\n    if (entryIdx === -1) return false;\n    chain.splice(entryIdx, 1);\n    this.size--;\n    return true;\n  }\n\n  // O(n) — Resize (doubles capacity, rehashes all)\n  #resize() {\n    const old = this.buckets;\n    this.capacity *= 2;\n    this.buckets  = Array.from({ length: this.capacity }, () => []);\n    this.size     = 0;\n    for (const chain of old)\n      for (const { key, value } of chain)\n        this.set(key, value);  // rehash into new buckets\n  }\n\n  get loadFactor() { return this.size / this.capacity; }\n}\n\n// Usage\nconst ht = new HashMap();\nht.set('name', 'Alice');\nht.set('age', 30);\nconsole.log(ht.get('name'));  // 'Alice'\nconsole.log(ht.has('age'));   // true\nht.delete('age');\nconsole.log(ht.loadFactor);   // 0.0625\n"
+            },
+            {
+                "filename": "hash_table.py",
+                "language": "python",
+                "code": "# ─── Hash Table in Python ────────────────────────────────────────────────────\n#\n# Python's dict is a highly optimised hash table using open addressing\n# with pseudo-random probing (not linear). It resizes at load factor 2/3.\n# Keys must be hashable (immutable: str, int, tuple — not list or dict).\n\n# ── Built-in dict ─────────────────────────────────────────────────────────\nd = {}\nd['name'] = 'Alice'      # O(1) insert\nd['age']  = 30           # O(1) insert\nd.get('name')            # O(1) → 'Alice'\n'age' in d               # O(1) → True\ndel d['age']             # O(1)\nlen(d)                   # O(1) → 1\n\n# Dict comprehension\nsquares = {x: x**2 for x in range(5)}  # {0:0, 1:1, 2:4, 3:9, 4:16}\n\n# setdefault — insert only if key absent\nd.setdefault('city', 'NYC')   # inserts; returns 'NYC'\nd.setdefault('name', 'Bob')   # key exists; returns 'Alice'\n\n# Counter — frequency map (hash table with default 0)\nfrom collections import Counter, defaultdict\ncounts  = Counter('aabbbc')         # {'b':3, 'a':2, 'c':1}\ndefmap  = defaultdict(list)          # missing keys default to []\n\n# ── Manual chaining hash table ────────────────────────────────────────────\nclass HashMap:\n    def __init__(self, capacity=16):\n        self.capacity  = capacity\n        self.buckets   = [[] for _ in range(capacity)]\n        self.size      = 0\n        self.THRESHOLD = 0.75\n\n    def _hash(self, key):\n        h = 0\n        for ch in str(key):\n            h = (h * 31 + ord(ch)) % self.capacity\n        return h\n\n    def set(self, key, value):                      # O(1) avg\n        idx   = self._hash(key)\n        chain = self.buckets[idx]\n        for entry in chain:\n            if entry[0] == key:\n                entry[1] = value; return\n        chain.append([key, value])\n        self.size += 1\n        if self.size / self.capacity > self.THRESHOLD:\n            self._resize()\n\n    def get(self, key):                             # O(1) avg\n        idx = self._hash(key)\n        for k, v in self.buckets[idx]:\n            if k == key: return v\n        return None\n\n    def contains(self, key):                        # O(1) avg\n        return self.get(key) is not None\n\n    def delete(self, key):                          # O(1) avg\n        idx = self._hash(key)\n        chain = self.buckets[idx]\n        for i, (k, _) in enumerate(chain):\n            if k == key:\n                chain.pop(i); self.size -= 1; return True\n        return False\n\n    def _resize(self):                              # O(n)\n        old = self.buckets\n        self.capacity *= 2\n        self.buckets   = [[] for _ in range(self.capacity)]\n        self.size      = 0\n        for chain in old:\n            for k, v in chain:\n                self.set(k, v)\n\n    @property\n    def load_factor(self): return self.size / self.capacity\n"
+            },
+            {
+                "filename": "HashMap.java",
+                "language": "java",
+                "code": "// ─── Hash Table in Java ──────────────────────────────────────────────────────\n//\n// java.util.HashMap — separate chaining, resizes at load factor 0.75.\n// java.util.LinkedHashMap — insertion-order preserving HashMap.\n// java.util.TreeMap — sorted by key, O(log n) ops (not a hash table).\n// java.util.Hashtable — legacy, synchronized, avoid in new code.\n// java.util.concurrent.ConcurrentHashMap — thread-safe, segment locking.\n\nimport java.util.*;\n\npublic class HashMapExamples {\n    public static void main(String[] args) {\n\n        // ── Built-in HashMap ─────────────────────────────────────────────\n        HashMap<String, Integer> map = new HashMap<>();\n        map.put(\"name\", 1);              // O(1) avg insert\n        map.put(\"age\",  2);              // O(1) avg insert\n        map.get(\"name\");                 // O(1) avg → 1\n        map.containsKey(\"age\");          // O(1) avg → true\n        map.remove(\"age\");               // O(1) avg\n        map.size();                      // O(1) → 1\n\n        // getOrDefault — safe get with fallback\n        int val = map.getOrDefault(\"missing\", 0);\n\n        // computeIfAbsent — insert only if absent (atomic)\n        map.computeIfAbsent(\"count\", k -> 0);\n\n        // merge — frequency counting pattern\n        String[] words = {\"a\", \"b\", \"a\", \"c\", \"b\", \"a\"};\n        Map<String, Integer> freq = new HashMap<>();\n        for (String w : words)\n            freq.merge(w, 1, Integer::sum);  // {a:3, b:2, c:1}\n\n        // Iteration\n        for (Map.Entry<String, Integer> e : freq.entrySet())\n            System.out.println(e.getKey() + \" = \" + e.getValue());\n    }\n\n    // ── Two Sum using HashMap — O(n) ──────────────────────────────────────\n    static int[] twoSum(int[] nums, int target) {\n        Map<Integer, Integer> seen = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            int complement = target - nums[i];\n            if (seen.containsKey(complement))\n                return new int[]{seen.get(complement), i};\n            seen.put(nums[i], i);\n        }\n        return new int[]{};\n    }\n\n    // ── Group anagrams — O(n·k) where k = avg word length ────────────────\n    static Map<String, List<String>> groupAnagrams(String[] words) {\n        Map<String, List<String>> groups = new HashMap<>();\n        for (String w : words) {\n            char[] ch = w.toCharArray();\n            Arrays.sort(ch);                     // sort chars as key\n            String key = new String(ch);\n            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(w);\n        }\n        return groups;\n    }\n}\n"
+            },
+            {
+                "filename": "hash_table.cpp",
+                "language": "cpp",
+                "code": "// ─── Hash Table in C++ ───────────────────────────────────────────────────────\n//\n// std::unordered_map — separate chaining, O(1) avg ops.\n// std::unordered_set — same but keys only (no values).\n// std::map            — red-black tree, O(log n) ops, sorted.\n// robin_hood::unordered_map (3rd party) — best performance in practice.\n\n#include <unordered_map>\n#include <unordered_set>\n#include <string>\n#include <vector>\n\nint main() {\n    // ── Built-in unordered_map ────────────────────────────────────────────\n    std::unordered_map<std::string, int> map;\n    map[\"name\"] = 1;              // O(1) avg insert / update\n    map.insert({\"age\", 2});       // O(1) avg insert (no overwrite)\n    map.count(\"name\");            // O(1) → 1 (exists)\n    map.at(\"name\");               // O(1) → 1 (throws if missing)\n    map.erase(\"age\");             // O(1) avg delete\n    map.size();                   // O(1)\n\n    // find — returns iterator (safer than operator[])\n    auto it = map.find(\"name\");\n    if (it != map.end())\n        std::string val = it->second;  // O(1)\n\n    // Reserve capacity to avoid rehashing (O(n))\n    map.reserve(1000);            // pre-allocate for 1000 elements\n    map.max_load_factor(0.7f);    // set custom load threshold\n\n    // ── Custom hash for user types ────────────────────────────────────────\n    struct PairHash {\n        size_t operator()(const std::pair<int,int>& p) const {\n            return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 32);\n        }\n    };\n    std::unordered_map<std::pair<int,int>, int, PairHash> pairMap;\n\n    // ── Two Sum — O(n) ───────────────────────────────────────────────────\n    auto twoSum = [](std::vector<int>& nums, int target) {\n        std::unordered_map<int, int> seen;\n        for (int i = 0; i < (int)nums.size(); i++) {\n            auto it = seen.find(target - nums[i]);\n            if (it != seen.end())\n                return std::make_pair(it->second, i);\n            seen[nums[i]] = i;\n        }\n        return std::make_pair(-1, -1);\n    };\n\n    return 0;\n}\n"
+            }
+        ]
+    },
+    "footerAlerts": [
+        {
+            "severity": "info",
+            "title": "Chaining vs open addressing — when to use each",
+            "items": [
+                "Separate chaining — prefer when load factor may exceed 0.7, deletion is frequent, or key size is large. Memory overhead: one pointer per bucket plus linked list nodes.",
+                "Open addressing (linear probing) — prefer when cache performance matters, keys are small integers or fixed-size, and load factor is kept below 0.7. All data in one contiguous array = fewer cache misses.",
+                "Robin Hood hashing (open addressing variant) — best practical performance. Used in Rust's HashMap. Equalises probe distances, eliminating worst-case hot spots.",
+                "For concurrent access: use ConcurrentHashMap (Java) or lock striping — never a global lock on the whole table."
+            ]
+        },
+        {
+            "severity": "success",
+            "title": "When hash tables shine",
+            "items": [
+                "Frequency counting — count occurrences in O(n): map[key]++ for each element.",
+                "Two sum / complement lookup — store seen values, check complement in O(1) per element.",
+                "Deduplication — insert into a hash set and check .has() before processing.",
+                "Caching / memoization — O(1) lookup of previously computed results.",
+                "Graph adjacency representation — vertex → neighbor list mapping."
+            ]
+        },
+        {
+            "severity": "warning",
+            "title": "Common interview pitfalls",
+            "items": [
+                "Mutable keys — using a list or array as a hash map key causes errors. Keys must be immutable and hashable.",
+                "Assuming O(1) worst case — hash tables are O(n) worst case. For guaranteed O(log n), use a balanced BST (TreeMap).",
+                "Tombstone accumulation in open addressing — too many deleted slots degrade performance. Periodic rehash clears them.",
+                "Java: HashMap vs HashSet — HashSet<T> is just a HashMap<T, Object> wrapper. Same complexity, different API.",
+                "Forgetting to handle collisions in custom implementations — always test with keys that hash to the same bucket."
+            ]
+        }
+    ],
+    "hints": [
+        "The load factor threshold matters: chaining can handle load > 1 (chains grow), but open addressing requires load < 1 (table would be full). Java defaults to 0.75 for chaining.",
+        "For the 'contains duplicate' pattern: insert into a set and check size before and after — or check .has() before .add().",
+        "When you need O(1) insert and O(log n) kth-largest: combine a hash map with a heap — this is the design of LRU Cache."
+    ]
+}

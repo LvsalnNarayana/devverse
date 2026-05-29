@@ -56,7 +56,7 @@
   "queue": {
     "kind": "queue",
     "label": "Queue",
-    "status": "planned"
+    "status": "ready"
   },
   "heap": {
     "kind": "heap",
